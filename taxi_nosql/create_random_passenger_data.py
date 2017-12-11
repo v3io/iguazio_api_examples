@@ -19,7 +19,7 @@ Wembly = [-0.2795,51.5560]
 
 Locations = [Wembly,Wembly,Canary_Wharf,Canary_Wharf,Downtown,Westminster,Heathrow_Parking,Heathrow,Heathrow_Parking,Heathrow_Parking,Heathrow_Parking,Gatwick]
 
-print ('Driver,Timestamp,Longitude,Latitude')
+print ('Passenger,Timestamp,Longitude,Latitude')
 for x in range (1,1200):
 	rnd_location = randint (0,11)
 	rnd_long = randint (-10,10)
