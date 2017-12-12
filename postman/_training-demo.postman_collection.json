@@ -1,0 +1,410 @@
+{
+	"info": {
+		"name": "_training-demo",
+		"_postman_id": "86968eb9-e521-48c9-77b9-7bf68cb466af",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "create session",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \”user\”, \n            \"password\": \”password\”\n        }\n    }\n}"
+				},
+				"url": {
+					"raw": "http://10.90.1.2:4001/api/sessions",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"2"
+					],
+					"port": "4001",
+					"path": [
+						"api",
+						"sessions"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create container",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"type\": \"container\",\n        \"attributes\": {\n            \"name\": \"demo-test\", \n            \"description\": \"just testing...\"\n        }\n    }\n}"
+				},
+				"url": {
+					"raw": "http://10.90.1.2:4001/api/containers",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"2"
+					],
+					"port": "4001",
+					"path": [
+						"api",
+						"containers"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list containers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://10.90.1.2:4001/api/containers",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"2"
+					],
+					"port": "4001",
+					"path": [
+						"api",
+						"containers"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "delete container",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://10.90.1.2:4001/api/containers/1024",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"2"
+					],
+					"port": "4001",
+					"path": [
+						"api",
+						"containers",
+						"1024"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Object API - PUT Object (general)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "file",
+					"file": {
+						"src": ""
+					}
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/pics/Mitsubishi.jpg",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"pics",
+						"Mitsubishi.jpg"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Object API - PUT Object  car",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "file",
+					"file": {
+						"src": ""
+					}
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars",
+						"0"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "No SQL Web API - PutItem",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r      \"Item\" : {\r          \"Color\":  {\"S\": \"Gray\"},\r          \"Vendor\": {\"S\" : \"Mitsubishi\"},\r          \"Mfg_Year\": {\"N\" : \"2017\"},\r          \"State\": {\"S\" : \"Error\"},\r          \"CarID\" : {\"N\" : \"0\"},\r          \"Speed\" :{ \"N\" : \"12\"}\r      }\r }\r"
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars",
+						"0"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "No SQL Web API - GetItem",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r    \"AttributesToGet\" : \"Color,Vendor, State,CarID,__mtime_secs,__name,Mfg_Year\"\r}\r"
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars",
+						"0"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "No SQL Web API - Update Item",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "UpdateItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\t\"UpdateMode\": \"CreateOrReplaceAttributes\", \r\t\"ConditionExpression\": \"State in ('Error','Attention')\", \r\t\"Item\": {\r        \"Alarm\": {\"S\": \"ON\"},\r        \"Region\": {\"N\" : \"1\"}\r    }\r      \r}\r"
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars",
+						"0"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "No SQL Web API - GetItem wildcard",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r    \"AttributesToGet\" : \"**\"\r}\r"
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars",
+						"0"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "No SQL Web API - GetItems",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItems"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\"Limit\": 1000,\r\"AttributesToGet\": \"__name,Speed\", \r\"FilterExpression\": \"Speed < 100\"\r}"
+				},
+				"url": {
+					"raw": "http://10.90.1.11:8081/1/training/cars",
+					"protocol": "http",
+					"host": [
+						"10",
+						"90",
+						"1",
+						"11"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"training",
+						"cars"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
