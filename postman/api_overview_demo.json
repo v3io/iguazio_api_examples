@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "_training-demo",
-		"_postman_id": "86968eb9-e521-48c9-77b9-7bf68cb466af",
+		"name": "01. API Training",
+		"_postman_id": "42e004ca-c4d5-8cb1-e728-6b3703c04182",
 		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -23,18 +23,15 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \"blossomc\", \n            \"password\": \"blossom1\"\n        }\n    }\n}"
+					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \"{{username}}\", \n            \"password\": \"{{password}}\"\n        }\n    }\n}"
 				},
 				"url": {
-					"raw": "http://10.90.1.2:4001/api/sessions",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/sessions",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"2"
+						"{{nginx-host}}"
 					],
-					"port": "4001",
+					"port": "{{nginx-port}}",
 					"path": [
 						"api",
 						"sessions"
@@ -59,15 +56,12 @@
 					"raw": "{\n    \"data\": {\n        \"type\": \"container\",\n        \"attributes\": {\n            \"name\": \"demo-test\", \n            \"description\": \"just testing...\"\n        }\n    }\n}"
 				},
 				"url": {
-					"raw": "http://10.90.1.2:4001/api/containers",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"2"
+						"{{nginx-host}}"
 					],
-					"port": "4001",
+					"port": "{{nginx-port}}",
 					"path": [
 						"api",
 						"containers"
@@ -84,15 +78,12 @@
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "http://10.90.1.2:4001/api/containers",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"2"
+						"{{nginx-host}}"
 					],
-					"port": "4001",
+					"port": "{{nginx-port}}",
 					"path": [
 						"api",
 						"containers"
@@ -109,15 +100,12 @@
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "http://10.90.1.2:4001/api/containers/1024",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers/1024",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"2"
+						"{{nginx-host}}"
 					],
-					"port": "4001",
+					"port": "{{nginx-port}}",
 					"path": [
 						"api",
 						"containers",
@@ -150,15 +138,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/pics/Mitsubishi.jpg",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/pics/Mitsubishi.jpg",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -192,15 +177,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars/0",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -213,7 +195,7 @@
 			"response": []
 		},
 		{
-			"name": "No SQL Web API - PutItem",
+			"name": "Key Value - Put Item",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -231,15 +213,12 @@
 					"raw": "{\r      \"Item\" : {\r          \"Color\":  {\"S\": \"Gray\"},\r          \"Vendor\": {\"S\" : \"Mitsubishi\"},\r          \"Mfg_Year\": {\"N\" : \"2017\"},\r          \"State\": {\"S\" : \"Error\"},\r          \"CarID\" : {\"N\" : \"0\"},\r          \"Speed\" :{ \"N\" : \"12\"}\r      }\r }\r"
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars/0",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -252,7 +231,7 @@
 			"response": []
 		},
 		{
-			"name": "No SQL Web API - GetItem",
+			"name": "Key Value - Get Item",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -270,15 +249,12 @@
 					"raw": "{\r    \"AttributesToGet\" : \"Color,Vendor, State,CarID,__mtime_secs,__name,Mfg_Year\"\r}\r"
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars/0",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -291,7 +267,7 @@
 			"response": []
 		},
 		{
-			"name": "No SQL Web API - Update Item",
+			"name": "Key Value - Update Item",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -306,18 +282,15 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\t\"UpdateMode\": \"CreateOrReplaceAttributes\", \r\t\"ConditionExpression\": \"State in ('Error','Attention')\", \r\t\"Item\": {\r        \"Alarm\": {\"S\": \"ON\"},\r        \"Region\": {\"N\" : \"1\"}\r    }\r      \r}\r"
+					"raw": "{\r  \"UpdateMode\": \"CreateOrReplaceAttributes\", \r  \"ConditionExpression\": \"State in ('Error','Attention')\", \r  \"Item\": {\r        \"Alarm\": {\"S\": \"ON\"},\r        \"Region\": {\"N\" : \"1\"}\r    }\r      \r}\r"
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars/0",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -330,7 +303,7 @@
 			"response": []
 		},
 		{
-			"name": "No SQL Web API - GetItem wildcard",
+			"name": "Key Value- Get Item wildcard",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -348,15 +321,12 @@
 					"raw": "{\r    \"AttributesToGet\" : \"**\"\r}\r"
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars/0",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars/0",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",
@@ -369,7 +339,7 @@
 			"response": []
 		},
 		{
-			"name": "No SQL Web API - GetItems",
+			"name": "Key Value - Get Items",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -387,15 +357,12 @@
 					"raw": "{\r\"Limit\": 1000,\r\"AttributesToGet\": \"__name,Speed\", \r\"FilterExpression\": \"Speed < 100\"\r}"
 				},
 				"url": {
-					"raw": "http://10.90.1.11:8081/1/training/cars",
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/training/cars",
 					"protocol": "http",
 					"host": [
-						"10",
-						"90",
-						"1",
-						"11"
+						"{{nginx-host}}"
 					],
-					"port": "8081",
+					"port": "{{nginx-port}}",
 					"path": [
 						"1",
 						"training",

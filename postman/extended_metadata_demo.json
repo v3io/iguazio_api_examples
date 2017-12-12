@@ -1,0 +1,219 @@
+{
+	"info": {
+		"name": "04. Iguazio Extended Metadata Examples",
+		"_postman_id": "055fb117-db83-a61f-216c-01cab34b21cc",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Put_item",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n  \"TableName\": \"table\",\n  \"Key\": \n  {\n    \"name\" :{\"S\": \"file.txt\"}\n  }, \n  \"Item\": \n  {\n    \"color\" : {\"S\":\"Green\"},\n    \"kilometers\": {\"N\": \"400\"},\n    \"blob_key\" : {\"B\" :\"dGhpcyBpcyBteSBrZXk=\"}\n  }\n}\n"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						""
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Get_items",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItems"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"AttributesToGet\": \"*\"\n\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/table/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"table",
+						""
+					]
+				},
+				"description": "Describe_stream"
+			},
+			"response": []
+		},
+		{
+			"name": "Get_item",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"AttributesToGet\" : \"color,kilometers,__name,birth_year\"\n    \n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/table/file.txt",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"table",
+						"file.txt"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "update_item",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n  \"UpdateExpression\":  \"birth_year = 1991; delete(kilometers)\"\n}\n"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/table/file.txt",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"table",
+						"file.txt"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "update_item_with_array",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \n  \"UpdateExpression\":  \"attr_int=init_array(100,'int');i=2; attr_int[0]=0; attr_int[1]=1; attr_int[2]=attr_int[0] + attr_int[1]\"\n}\n"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/table/array_item",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"table",
+						"array_item"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Get_item_array",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetItem"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"AttributesToGet\" : \"*\"\n    \n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/table/array_item",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"table",
+						"array_item"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}

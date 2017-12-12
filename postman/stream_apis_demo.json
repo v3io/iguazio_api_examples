@@ -1,0 +1,362 @@
+{
+	"info": {
+		"name": "03. Iguazio Stream Examples",
+		"_postman_id": "2a40fbf7-d6c4-bda5-dc4e-f6d367b63e65",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Stream",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "CreateStream"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"ShardCount\":2,\n    \"RetentionPeriodHours\": 1\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						""
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "PutRecords",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutRecords"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Records\": [\n        {\n          \"ShardId\": 0,\n            \"Data\":\"SGVsbG8=\",\n            \"ClientInfo\": \"MjkvMDEvMjAxNw==\"\n        },\n         {\n           \"ShardId\": 0,\n            \"Data\":\"MjkvMDEvMjAxNw==\",\n            \"PartitionKey\": \"123456\"\n        },\n         {\n            \"Data\":\"SGVsbG8=\",\n            \"PartitionKey\": \"My key is\"\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						""
+					]
+				},
+				"description": "Put_records"
+			},
+			"response": []
+		},
+		{
+			"name": "Get_records",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "GetRecords"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Location\": \"AQAAAAAAAAAAAAAAAAAAAA==\",\n    \"Limit\": 10\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/0",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						"0"
+					]
+				},
+				"description": "Get_records"
+			},
+			"response": []
+		},
+		{
+			"name": "Seek_latest",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "Seek"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Type\": \"LATEST\"\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/0",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						"0"
+					]
+				},
+				"description": "Seek_latest"
+			},
+			"response": []
+		},
+		{
+			"name": "Seek_earliest",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "Seek"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Type\": \"EARLIEST\"\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/0",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						"0"
+					]
+				},
+				"description": "Seek_earliest"
+			},
+			"response": []
+		},
+		{
+			"name": "Seek_seq",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "Seek"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Type\": \"SEQUENCE\",\n    \"StartingSequenceNumber\": 1\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/0",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						"0"
+					]
+				},
+				"description": "Seek_seq"
+			},
+			"response": []
+		},
+		{
+			"name": "Describe_stream",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "DescribeStream"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						""
+					]
+				},
+				"description": "Describe_stream"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Stream",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "UpdateStream"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"ShardCount\":4\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "PutRecords_with_session_key",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "PutRecords"
+					},
+					{
+						"key": "X-v3io-session-key",
+						"value": "123e4567-e89b-12d3-a456-426655440000"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Records\": [\n        {\n          \"ShardId\": 0,\n            \"Data\":\"SGVsbG8=\",\n            \"ClientInfo\": \"MjkvMDEvMjAxNw==\"\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic"
+					]
+				},
+				"description": "Put_records"
+			},
+			"response": []
+		},
+		{
+			"name": "Seek_time",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-v3io-function",
+						"value": "Seek"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Type\": \"TIME\",\n    \"TimeStampSec\": 0,\n    \"TimeStampNSec\": 0\n}"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/topic/0",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"topic",
+						"0"
+					]
+				},
+				"description": "Seek_time"
+			},
+			"response": []
+		}
+	]
+}

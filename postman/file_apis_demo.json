@@ -1,0 +1,270 @@
+{
+	"info": {
+		"name": "02. Iguazio files requests",
+		"_postman_id": "337dc2b5-4ba3-70bc-86cf-c7a79e124e1e",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "list buckts - timeout",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list buckt ",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						""
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list read ",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/?prefix=table",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						""
+					],
+					"query": [
+						{
+							"key": "prefix",
+							"value": "table",
+							"equals": true
+						}
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list read and prefix info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/?prefix-info=1",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						""
+					],
+					"query": [
+						{
+							"key": "prefix-info",
+							"value": "1",
+							"equals": true
+						}
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list read and prefix only",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/?prefix-only=1",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						""
+					],
+					"query": [
+						{
+							"key": "prefix-only",
+							"value": "1",
+							"equals": true
+						}
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "put file",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "hello!!!!!!"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/file.txt",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"file.txt"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get file",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/file.txt",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"file.txt"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "put dir",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/dir/",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"dir",
+						""
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "put append",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Range",
+						"value": "-1"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "dasdas"
+				},
+				"url": {
+					"raw": "http://{{nginx-host}}:{{nginx-port}}/1/file.txt",
+					"protocol": "http",
+					"host": [
+						"{{nginx-host}}"
+					],
+					"port": "{{nginx-port}}",
+					"path": [
+						"1",
+						"file.txt"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "v3io session header",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "X-v3io-session-key",
+						"value": "123e4567-e89b-12d3-a456-426655440000"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "sadfdfasfsdas"
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8081/1/session_key",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8081",
+					"path": [
+						"1",
+						"session_key"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
