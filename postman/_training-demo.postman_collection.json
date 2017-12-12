@@ -23,7 +23,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \”user\”, \n            \"password\": \”password\”\n        }\n    }\n}"
+					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \"blossomc\", \n            \"password\": \"blossom1\"\n        }\n    }\n}"
 				},
 				"url": {
 					"raw": "http://10.90.1.2:4001/api/sessions",
