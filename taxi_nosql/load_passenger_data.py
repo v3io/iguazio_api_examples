@@ -7,7 +7,7 @@ import igz_nosql_web
 
 BASE_URL = 'http://127.0.0.1:8081'
 
-PASSENGERS_PATH_IN_URL = '/1/taxi_example/passangers/'
+PASSENGERS_PATH_IN_URL = '/1/taxi_example/passengers/'
 CELLS_PATH_IN_URL   = '/1/taxi_example/cells/'
 
 # read CSV
