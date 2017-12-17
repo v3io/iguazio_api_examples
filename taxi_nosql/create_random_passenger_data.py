@@ -20,10 +20,14 @@ Wembly = [-0.2795,51.5560]
 Locations = [Wembly,Wembly,Canary_Wharf,Canary_Wharf,Downtown,Westminster,Heathrow_Parking,Heathrow,Heathrow_Parking,Heathrow_Parking,Heathrow_Parking,Gatwick]
 
 print ('Passenger,Timestamp,Longitude,Latitude')
-for x in range (1,1200):
-	rnd_location = randint (0,11)
-	rnd_long = randint (-10,10)
-	rnd_lat  = randint (-10,10)
-	long =  Decimal (Locations[rnd_location][0]) + (Decimal (rnd_long) / Decimal (300))
-	lat = Decimal (Locations[rnd_location][1])  + (Decimal (rnd_lat) / Decimal (300))
-	print ("%d,2017-12-05 09:00:00.050000000,%f,%f"  %(x,long,lat))
+for x in range (1,1000):
+        rnd_location = randint (0,11)
+        rnd_radius = randint (0,8)
+        for y in range (1,300):
+                rnd_passenger = randint (1,5000)
+                rnd_long = randint (-rnd_radius,rnd_radius)
+                rnd_lat  = randint (-rnd_radius,rnd_radius)
+                long =  Decimal (Locations[rnd_location][0]) + (Decimal (rnd_long) / Decimal (300))
+                lat = Decimal (Locations[rnd_location][1])  + (Decimal (rnd_lat) / Decimal (300))
+                print ("%d,2017-12-05 09:00:00.050000000,%f,%f"  %(rnd_passenger,long,lat))
+

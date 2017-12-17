@@ -78,7 +78,6 @@ with open(INPUT_FILE) as csvfile:
                                          None)
         counter = counter + 1
         if counter % 1000 == 0:
-            print(counter)
             end = time.time()
             print("File: {}, timing: {}, Counter: {}".format(INPUT_FILE, end - start, counter))
 end = time.time()
