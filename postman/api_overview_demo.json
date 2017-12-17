@@ -26,12 +26,12 @@
 					"raw": "{\n    \"data\": {\n        \"type\": \"session\",\n        \"attributes\": {\n            \"username\": \"{{username}}\", \n            \"password\": \"{{password}}\"\n        }\n    }\n}"
 				},
 				"url": {
-					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/sessions",
+					"raw": "http://{{node}}:{{node-port}}/api/sessions",
 					"protocol": "http",
 					"host": [
-						"{{nginx-host}}"
+						"{{node}}"
 					],
-					"port": "{{nginx-port}}",
+					"port": "{{node-port}}",
 					"path": [
 						"api",
 						"sessions"
@@ -49,19 +49,23 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
+					},
+					{
+						"key": "session",
+						"value": "{{session-token}}"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"data\": {\n        \"type\": \"container\",\n        \"attributes\": {\n            \"name\": \"demo-test\", \n            \"description\": \"just testing...\"\n        }\n    }\n}"
+					"raw": "{\n    \"data\": {\n        \"type\": \"container\",\n        \"attributes\": {\n            \"name\": \"demo\",\n            \"description\": \"testing\",\n            \"features\": {\n                \"encryption\": false,\n                \"compression\": false,\n                \"dedup\": false,\n                \"checksum\": false\n            }\n        }\n    }\n}"
 				},
 				"url": {
-					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers",
+					"raw": "http://{{node}}:{{node-port}}/api/containers",
 					"protocol": "http",
 					"host": [
-						"{{nginx-host}}"
+						"{{node}}"
 					],
-					"port": "{{nginx-port}}",
+					"port": "{{node-port}}",
 					"path": [
 						"api",
 						"containers"
@@ -75,15 +79,20 @@
 			"name": "list containers",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "session",
+						"value": "e59c01fd-d772-4314-9983-7f47b7349a1d"
+					}
+				],
 				"body": {},
 				"url": {
-					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers",
+					"raw": "http://{{node}}:{{node-port}}/api/containers",
 					"protocol": "http",
 					"host": [
-						"{{nginx-host}}"
+						"{{node}}"
 					],
-					"port": "{{nginx-port}}",
+					"port": "{{node-port}}",
 					"path": [
 						"api",
 						"containers"
@@ -97,19 +106,24 @@
 			"name": "delete container",
 			"request": {
 				"method": "DELETE",
-				"header": [],
+				"header": [
+					{
+						"key": "session",
+						"value": "{{session-token}}"
+					}
+				],
 				"body": {},
 				"url": {
-					"raw": "http://{{nginx-host}}:{{nginx-port}}/api/containers/1024",
+					"raw": "http://{{node}}:{{node-port}}/api/containers/1025",
 					"protocol": "http",
 					"host": [
-						"{{nginx-host}}"
+						"{{node}}"
 					],
-					"port": "{{nginx-port}}",
+					"port": "{{node-port}}",
 					"path": [
 						"api",
 						"containers",
-						"1024"
+						"1025"
 					]
 				},
 				"description": ""
@@ -117,7 +131,7 @@
 			"response": []
 		},
 		{
-			"name": "Object API - PUT Object (general)",
+			"name": "Object API - PUT Object (image)",
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -156,7 +170,7 @@
 			"response": []
 		},
 		{
-			"name": "Object API - PUT Object  car",
+			"name": "Object API - PUT Object (general)",
 			"request": {
 				"method": "PUT",
 				"header": [
