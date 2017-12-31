@@ -10,7 +10,7 @@ OUTPUT_PATH = '/taxi_example/'
 #
 def archive(rdd):
     rdd.cache ()
-    if not rdd.isEmpty():i
+    if not rdd.isEmpty():
 	# read the stream
         df = spark.read.json(rdd)
 	# df.show()	
@@ -25,7 +25,7 @@ def archive(rdd):
 	
 	# Group current status for all drivers
 	gdf = df.groupby("status").count()
-	#gdf.show()	i
+	#gdf.show()
 
 	# Write driver status summary
 	gdf.write\
