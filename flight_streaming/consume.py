@@ -2,13 +2,14 @@ from pyspark.sql import SparkSession
 from pyspark.streaming import StreamingContext
 from v3io.spark.streaming import *
 
-STREAM_NAME='training/flight_stream'
+STREAM_NAME='/training/flight_stream'
 OUTPUT_PATH = 'training'
 
 # 
 # Write stream data to Parquet
 #
 def archive(rdd):
+    rdd.cache()
     if not rdd.isEmpty():
         df = spark.read.json(rdd)
         df.write\
