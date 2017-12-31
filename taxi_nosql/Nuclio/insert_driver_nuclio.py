@@ -10,13 +10,10 @@ DRIVERS_PATH_IN_URL = '/1/drivers/'
 CELLS_PATH_IN_URL   = '/1/cells/'
 
 #------------
-#BASE_URL = 'http://localhost:38395'
 BASE_URL = 'http://192.168.218.25:32418'
-INPUT_FILE = 'C:\\Users\\ronenf\\Documents\\Iguazio\\Code\\PickMe\\Sample_201711062330_10000.csv'
-
 
 # read CSV
-#INPUT_FILE = str(sys.argv[1])
+INPUT_FILE = str(sys.argv[1])
 
 start = time.time()
 counter = 0
