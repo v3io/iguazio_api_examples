@@ -9,6 +9,6 @@ curl  -X PUT \
      --header "X-v3io-function: CreateStream" \
      --header "Cache-Control: no-cache" \
      --data '{"ShardCount": 12, "RetentionPeriodHours": 1}' \
-     http://192.168.224.69:8081/1/$STREAM_NAME/
+     http://127.0.0.1:8081/1/$STREAM_NAME/
 
 
