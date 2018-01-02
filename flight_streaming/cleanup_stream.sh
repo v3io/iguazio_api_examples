@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-NGINX_IP='10.90.1.11'
+NGINX_IP='10.90.1.101'
 NUM_SHARDS=12
 STREAM_NAME=training/flight_stream
 
