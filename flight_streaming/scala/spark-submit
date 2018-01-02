@@ -1,0 +1,2 @@
+
+spark-submit --master yarn  --jars ~/training/config-1.2.1.jar,/home/iguazio/igz/bigdata/libs/v3io-hcfs_2.11.jar,/home/iguazio/igz/bigdata/libs/v3io-spark2-object-dataframe_2.11.jar,/home/iguazio/igz/bigdata/libs/v3io-spark2-streaming_2.11.jar    ~/training/training-demo_2.11-1.0.jar

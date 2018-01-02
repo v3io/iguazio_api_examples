@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export NGINX_IP='10.90.1.11'
+export NGINX_IP='10.90.1.101'
 
 STREAM_NAME=training/flight_stream
 

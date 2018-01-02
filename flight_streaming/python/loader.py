@@ -5,7 +5,7 @@ import numbers
 import requests
 import time
 
-NGINX_HOST = '10.90.1.11'
+NGINX_HOST = '10.90.1.101'
 NGINX_PORT = '8081'
 STREAM_NAME = 'training/flight_stream'
 CONTAINER_ID = 1
