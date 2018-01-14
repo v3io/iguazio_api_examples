@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-NGINX_IP=‘127.0.0.1’
+NGINX_IP='127.0.0.1'
 
 STREAM_NAME=taxi_example/driver_stream
 
