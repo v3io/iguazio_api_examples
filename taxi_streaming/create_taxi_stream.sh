@@ -11,4 +11,3 @@ curl  -X PUT \
      --data '{"ShardCount": 12, "RetentionPeriodHours": 1}' \
      http://127.0.0.1:8081/1/$STREAM_NAME/
 
-
