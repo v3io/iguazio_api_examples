@@ -25,7 +25,7 @@ Locations = [Canary_Wharf, Canary_Wharf, Downtown, Westminster, Oxford_St,
 Statuses = ["Available", "Busy", "Passenger"]
 
 # Create a driver-information CSV file
-print('Driver, Timestamp, Longitude, Latitude, status')
+print("Driver, Timestamp, Longitude, Latitude, status")
 for x in range(1, 1000):
     rnd_location = randint(0, 9)
     rnd_radius = randint(0, 8)

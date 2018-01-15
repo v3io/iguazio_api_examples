@@ -11,7 +11,7 @@ STREAM_PATH="taxi_example/driver_stream"
 # Stream shard count - the number of shards into which to divide the stream
 NUM_SHARDS=12
 # Stream retention period (starting from the stream's creation time), in hours.
-# When this period expires, earlier data records might be deleted to make room
+# When this period elapses, earlier data records might be deleted to make room
 # for newer records.
 RETENTION_PERIOD=1
 
