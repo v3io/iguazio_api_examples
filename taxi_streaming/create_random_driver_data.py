@@ -33,5 +33,3 @@ for x in range (1,1000):
 		status = Statuses [rnd_status]
                 print ("%d,2017-12-05 09:00:00.050000000,%f,%fi,%s"  %(rnd_driver,long,lat,status))
 
-
-
