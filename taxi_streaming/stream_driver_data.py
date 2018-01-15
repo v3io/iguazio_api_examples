@@ -11,7 +11,6 @@ NGINX_HOST = "127.0.0.1"
 NGINX_PORT = "8081"
 STREAM_NAME = "taxi_example/driver_stream"
 CONTAINER_ID = 1
-INTERVAL = 120
 BATCH_SIZE = 500
 
 INPUT_FILE = str(sys.argv[1])
