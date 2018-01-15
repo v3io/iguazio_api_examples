@@ -37,7 +37,7 @@ def archive(rdd):
 
 
 spark = SparkSession.builder\
-    .appName('ingest to kv')\
+    .appName('ingest to nosql')\
     .getOrCreate()
 
 # Define Streaming Context with 10 second micro-batch
