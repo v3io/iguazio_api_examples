@@ -48,18 +48,19 @@ spark = SparkSession.builder \
     .appName("taxi_streaming example - consume stream data") \
     .getOrCreate()
 
-# Define a Spark streaming context with a 10-seconds micro-batch
+# Create a Spark streaming context with a 10-seconds micro-batch interval
 ssc = StreamingContext(spark.sparkContext, 10)
-
+# Configure the platform stream's parent data container
 v3ioConfig = {"container-id": CONTAINER_ID}
 # Map the platform stream to a Spark input stream using the platform's
 # Spark-Streaming Integration API
-stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH],
-                                      v3ioConfig)
-# Consume the stream data using Spark
+stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH], v3ioConfig)
+
+# Assign the archive stream-data consumption function as the stream's
+# Resilient Distributed Dataset (RDD) handler
 stream.foreachRDD(archive)
 
-# Start the Spark job
+# Start consuming data from the stream
 ssc.start()
 ssc.awaitTermination()
 
