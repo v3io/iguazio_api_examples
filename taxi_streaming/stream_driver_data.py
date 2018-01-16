@@ -14,7 +14,7 @@ NGINX_IP = "127.0.0.1"
 # Port number of the platform's web-gateway service
 NGINX_PORT = "8081"
 # Stream container-directory path
-STREAM_PATH = "taxi_example/driver_stream"
+STREAM_PATH = "/taxi_example/driver_stream"
 
 # Stream-records batch size
 STREAM_RECORDS_BATCH_SIZE = 500
@@ -26,7 +26,7 @@ INPUT_FILE = str(sys.argv[1])
 # Create the PutRecords request URL with the platform's web-gateway host name
 # or IP address and port number, the container ID, and the stream path
 def get_stream_url():
-    return "http://{0}:{1}/{2}/{3}/" \
+    return "http://{0}:{1}/{2}{3}/" \
         .format(NGINX_IP, NGINX_PORT, CONTAINER_ID, STREAM_PATH)
 
 

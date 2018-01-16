@@ -7,7 +7,7 @@ NGINX_IP="127.0.0.1"
 # Port number of the platform's web-gateway service
 NGINX_PORT="8081"
 # Stream container-directory path
-STREAM_PATH="taxi_example/driver_stream"
+STREAM_PATH="/taxi_example/driver_stream"
 # Stream shard count
 NUM_SHARDS=12
 
@@ -19,5 +19,5 @@ do
 done
 
 echo "Deleting the ${STREAM_PATH} stream from container #${CONTAINER_ID} ..."
-curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/
+curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}${STREAM_PATH}/
 

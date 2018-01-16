@@ -7,7 +7,7 @@ NGINX_PORT="8081"
 # Data-container ID
 CONTAINER_ID=1  # assumes a default container with ID 1
 # Stream container-directory path
-STREAM_PATH="taxi_example/driver_stream"
+STREAM_PATH="/taxi_example/driver_stream"
 # Stream shard count - the number of shards into which to divide the stream
 NUM_SHARDS=12
 # Stream retention period (starting from the stream's creation time), in hours.
@@ -22,5 +22,5 @@ curl -X PUT \
     --header "X-v3io-function: CreateStream" \
     --header "Cache-Control: no-cache" \
     --data "{'ShardCount': ${NUM_SHARDS}, 'RetentionPeriodHours': ${RETENTION_PERIOD}}" \
-    http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/
+    http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}${STREAM_PATH}/
 
