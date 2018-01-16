@@ -4,10 +4,13 @@ from v3io.spark.streaming import *
 
 # Data-container ID
 CONTAINER_ID = 1  # assumes a default container with ID 1
-# Output container-directory path for generated files and directories
-OUTPUT_PATH = "/taxi_example/"
+
+# Path to the taxi_streaming example directory within the container
+EXAMPLE_PATH = "/taxi_example/"
+# NoSQL tables Path
+NOSQL_TABLES_PATH = EXAMPLE_PATH
 # Stream container-directory path
-STREAM_PATH = OUTPUT_PATH + "driver_stream"
+STREAM_PATH = EXAMPLE_PATH + "driver_stream"
 
 
 # Consume the stream data: read the data and save it to NoSQL tables
@@ -25,7 +28,7 @@ def archive(rdd):
             .mode("overwrite") \
             .option("Key", "driver") \
             .option("container-id", CONTAINER_ID) \
-            .save("{0}/{1}".format(OUTPUT_PATH, "driver_kv/"))
+            .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_kv/"))
 
         # Group the driver ride-status data for all drivers, and count the
         # number of drivers in each status
@@ -38,7 +41,7 @@ def archive(rdd):
             .mode("overwrite") \
             .option("Key", "status") \
             .option("container-id", CONTAINER_ID) \
-            .save("{0}/{1}".format(OUTPUT_PATH, "driver_summary/"))
+            .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_summary/"))
 
 # Create a Spark session
 spark = SparkSession.builder \
