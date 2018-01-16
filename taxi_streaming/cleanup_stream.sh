@@ -19,5 +19,5 @@ do
 done
 
 echo "Deleting the ${STREAM_PATH} stream from container #${CONTAINER_ID} ..."
-curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/1/${STREAM_PATH}/
+curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/
 
