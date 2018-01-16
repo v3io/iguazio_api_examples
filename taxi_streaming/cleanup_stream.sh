@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 # Data-container ID
-CONTAINER_ID = 1  # assumes a default container with ID 1
+CONTAINER_ID=1  # assumes a default container with ID 1
 # IP address of the platform's web-gateway service
 NGINX_IP="127.0.0.1"
 # Port number of the platform's web-gateway service
-NGINX_PORT = "8081"
+NGINX_PORT="8081"
 # Stream container-directory path
-STREAM_PATH = "taxi_example/driver_stream"
+STREAM_PATH="taxi_example/driver_stream"
 # Stream shard count
 NUM_SHARDS=12
 
