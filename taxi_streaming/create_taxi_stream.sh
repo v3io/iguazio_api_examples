@@ -21,6 +21,6 @@ curl -X PUT \
     --header "Content-type: application/json" \
     --header "X-v3io-function: CreateStream" \
     --header "Cache-Control: no-cache" \
-    --data '{"ShardCount": ${NUM_SHARDS}, "RetentionPeriodHours": ${RETENTION_PERIOD}}' \
+    --data "{'ShardCount': ${NUM_SHARDS}, 'RetentionPeriodHours': ${RETENTION_PERIOD}}" \
     http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/
 
