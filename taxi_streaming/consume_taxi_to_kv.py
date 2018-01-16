@@ -27,18 +27,18 @@ def archive(rdd):
             .option("container-id", CONTAINER_ID) \
             .save("{0}/{1}".format(OUTPUT_PATH, "driver_kv/"))
 
-    # Group the driver ride-status data for all drivers, and count the number
-    # of drivers in each status
-    gdf = df.groupby("status").count()
-    # gdf.show()
+        # Group the driver ride-status data for all drivers, and count the
+        # number of drivers in each status
+        gdf = df.groupby("status").count()
+        # gdf.show()
 
-    # Write the driver ride-status summary to a drivers-status NoSQL table
-    gdf.write \
-        .format("io.iguaz.v3io.spark.sql.kv") \
-        .mode("overwrite") \
-        .option("Key", "status") \
-        .option("container-id", CONTAINER_ID) \
-        .save("{0}/{1}".format(OUTPUT_PATH, "driver_summary/"))
+        # Write the driver ride-status summary to a drivers-status NoSQL table
+        gdf.write \
+            .format("io.iguaz.v3io.spark.sql.kv") \
+            .mode("overwrite") \
+            .option("Key", "status") \
+            .option("container-id", CONTAINER_ID) \
+            .save("{0}/{1}".format(OUTPUT_PATH, "driver_summary/"))
 
 # Create a Spark session
 spark = SparkSession.builder \
