@@ -7,7 +7,7 @@ CONTAINER_ID = 1  # assumes a default container with ID 1
 # Output container-directory path for generated files and directories
 OUTPUT_PATH = "/taxi_example/"
 # Stream container-directory path
-STREAM_PATH = OUTPUT_PATH/driver_stream
+STREAM_PATH = OUTPUT_PATH + "driver_stream"
 
 
 # Consume the stream data: read the data and save it to NoSQL tables
@@ -19,13 +19,13 @@ def archive(rdd):
         df = spark.read.json(rdd)
         # df.show()
 
-    # Write the drivers data to a drivers NoSQL table
-    df.write \
-        .format("io.iguaz.v3io.spark.sql.kv") \
-        .mode("overwrite") \
-        .option("Key", "driver") \
-        .option("container-id", CONTAINER_ID) \
-        .save("{0}/{1}".format(OUTPUT_PATH, "driver_kv/"))
+        # Write the drivers data to a drivers NoSQL table
+        df.write \
+            .format("io.iguaz.v3io.spark.sql.kv") \
+            .mode("overwrite") \
+            .option("Key", "driver") \
+            .option("container-id", CONTAINER_ID) \
+            .save("{0}/{1}".format(OUTPUT_PATH, "driver_kv/"))
 
     # Group the driver ride-status data for all drivers, and count the number
     # of drivers in each status
@@ -51,7 +51,7 @@ ssc = StreamingContext(spark.sparkContext, 10)
 v3ioConfig = {"container-id": CONTAINER_ID}
 # Map the platform stream to a Spark input stream using the platform's
 # Spark-Streaming Integration API
-stream = V3IOUtils.createDirectStream(ssc, [OUTPUT_PATH/STREAM_NAME],
+stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH],
                                       v3ioConfig)
 # Consume the stream data using Spark
 stream.foreachRDD(archive)
