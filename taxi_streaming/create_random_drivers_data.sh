@@ -4,5 +4,5 @@
 STREAM_DATA_INPUT_FILE="drivers_data.csv"
 
 # Generate a file with random drivers stream data
-python create_random_driver_data.py > ${STREAM_DATA_INPUT_FILE}
+python create_random_drivers_data.py > ${STREAM_DATA_INPUT_FILE}
 
