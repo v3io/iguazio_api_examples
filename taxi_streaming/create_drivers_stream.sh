@@ -7,7 +7,7 @@ NGINX_PORT="8081"
 # Data-container name
 CONTAINER_NAME="bigdata"
 # Stream container-directory path
-STREAM_PATH="/taxi_example/drivers_stream"
+STREAM_PATH="/taxi_streaming_example/drivers_stream"
 # Stream shard count - the number of shards into which to divide the stream
 NUM_SHARDS=12
 # Stream retention period (starting from the stream's creation time), in hours.
