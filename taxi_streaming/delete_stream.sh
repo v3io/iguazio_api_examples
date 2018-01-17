@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Data-container ID
-CONTAINER_ID=1  # assumes a default container with ID 1
+# Data-container name
+CONTAINER_NAME="bigdata"
 # IP address of the platform's web-gateway service
 NGINX_IP="127.0.0.1"
 # Port number of the platform's web-gateway service
@@ -14,10 +14,10 @@ NUM_SHARDS=12
 # Delete the stream by removing its container directory
 for i in `eval echo {0..${NUM_SHARDS}}`
 do
-   echo "curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/$i"
-   curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}/${STREAM_PATH}/$i
+   echo "curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_NAME}/${STREAM_PATH}/$i"
+   curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_NAME}/${STREAM_PATH}/$i
 done
 
-echo "Deleting the ${STREAM_PATH} stream from container #${CONTAINER_ID} ..."
-curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_ID}${STREAM_PATH}/
+echo "Deleting the ${STREAM_PATH} stream from container ${CONTAINER_NAME} ..."
+curl -v -XDELETE http://${NGINX_IP}:${NGINX_PORT}/${CONTAINER_NAME}${STREAM_PATH}/
 
