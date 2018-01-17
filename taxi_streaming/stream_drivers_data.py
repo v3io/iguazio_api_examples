@@ -8,7 +8,7 @@ import time
 import sys
 
 # Data-container name
-CONTAINER_NAME="bigdata"
+CONTAINER_NAME = "bigdata"
 # IP address of the platform's web-gateway service
 NGINX_IP = "127.0.0.1"
 # Port number of the platform's web-gateway service
