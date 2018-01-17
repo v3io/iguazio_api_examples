@@ -2,13 +2,13 @@ from pyspark.sql import SparkSession
 from pyspark.streaming import StreamingContext
 from v3io.spark.streaming import *
 
-# Data-container ID
-CONTAINER_ID = 1  # assumes a default container with ID 1
+# Data-container name
+CONTAINER_NAME="bigdata"
 
 # Path to the taxi_streaming example directory within the container
 EXAMPLE_PATH = "/taxi_example/"
 # NoSQL tables Path
-NOSQL_TABLES_PATH = EXAMPLE_PATH
+NOSQL_TABLES_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH
 # Stream container-directory path
 STREAM_PATH = EXAMPLE_PATH + "driver_stream"
 
@@ -27,7 +27,6 @@ def archive(rdd):
             .format("io.iguaz.v3io.spark.sql.kv") \
             .mode("overwrite") \
             .option("Key", "driver") \
-            .option("container-id", CONTAINER_ID) \
             .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_kv/"))
 
         # Group the driver ride-status data for all drivers, and count the
@@ -40,7 +39,6 @@ def archive(rdd):
             .format("io.iguaz.v3io.spark.sql.kv") \
             .mode("overwrite") \
             .option("Key", "status") \
-            .option("container-id", CONTAINER_ID) \
             .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_summary/"))
 
 # Create a Spark session
@@ -51,7 +49,7 @@ spark = SparkSession.builder \
 # Create a Spark streaming context with a 10-seconds micro-batch interval
 ssc = StreamingContext(spark.sparkContext, 10)
 # Configure the platform stream's parent data container
-v3ioConfig = {"container-id": CONTAINER_ID}
+v3ioConfig = {"container-alias": CONTAINER_NAME}
 # Map the platform stream to a Spark input stream using the platform's
 # Spark-Streaming Integration API
 stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH], v3ioConfig)
