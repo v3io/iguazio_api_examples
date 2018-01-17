@@ -14,7 +14,7 @@ NGINX_IP = "127.0.0.1"
 # Port number of the platform's web-gateway service
 NGINX_PORT = "8081"
 # Stream container-directory path
-STREAM_PATH = "/taxi_example/driver_stream"
+STREAM_PATH = "/taxi_streaming_example/drivers_stream"
 
 # Stream-records batch size
 STREAM_RECORDS_BATCH_SIZE = 500
