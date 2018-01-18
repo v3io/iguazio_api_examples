@@ -12,12 +12,14 @@ In this document
 ### Use-Case Story
 
 The taxi-streaming example &mdash; [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) &mdash; demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a taxi company that provides ride-hailing services in the city of London and its surroundings.
-The taxis send to the platform their current location (GPS coordinates) and the IDs of the drivers, and the drivers also report their current availability (ride status &mdash; available, busy, or with a passenger).
+The taxis send to the platform their current GPS coordinates and the IDs of the drivers, and the drivers also report their current availability (ride status &mdash; available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
 A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a NoSQL data table in a platform data container.
 In addition, the ride-status information is aggregated and saved to a NoSQL driver-status summary table that shows the current number of drivers in each status.
 
 > **Note:** For demonstration purposes, the sample generates a CSV input file of randomly generated stream data in place of the real-time data transmission.
+
+<p align="center"><img src="/images/taxi_streaming_diagram.png"/></p>
 
 ### Platform Capabilities and APIs
 
