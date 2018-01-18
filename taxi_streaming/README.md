@@ -130,7 +130,7 @@ Real-life scenarios will typically use a more efficient method to retrieve the a
 
 > **Note:** You can use the **create_random_drivers_data.sh** bash script to run the **create_random_drivers_data.py** application, as explained in [Step 1](#sample_run_create_random_drivers_data_sh) of the "Running the Code" instructions.
 
-The generated stream data includes numeric driver IDs, data-generation timestamps, the taxi's current GPS coordinates, and the driver's current ride status.
+The generated stream data includes a numeric driver ID, a data-generation timestamp, the taxi's current GPS coordinates, and the driver's current ride status.
 The ride status can be one of the following:
 
 - "Available" &mdash; the driver is available for a new ride.
