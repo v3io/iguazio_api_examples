@@ -325,8 +325,7 @@ The `archive` stream-data consumption function, which is executed for each strea
     gdf.write \
         .format("io.iguaz.v3io.spark.sql.kv") \
         .mode("overwrite") \
-        .option("Key", "status") \
-        .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
+        .option("Key", "status").save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
     ```
 
 ## Cleanup
