@@ -52,7 +52,7 @@ Alternatively, you can clone the GitHub repository or download the [**taxi_strea
 ### Running the Code
 
 The sample's root directory contains bash shell scripts that simplify the code execution.
-Follow these steps to run the scripts and test the sample in less than two minutes; (the most time-consuming task is the generation of the random test-data):
+Follow these steps to run the scripts and test the sample in less than two minutes; (the most time-consuming task is the generation of the random test data):
 
 > **Note:** By default, the sample creates the stream and NoSQL tables in a **taxi_streaming_example** directory in the default "bigdata" container.
 > You can view the directory's contents in the platform's graphical dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
