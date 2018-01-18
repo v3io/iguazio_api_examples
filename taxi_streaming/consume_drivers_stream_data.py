@@ -39,8 +39,7 @@ def archive(rdd):
             .format("io.iguaz.v3io.spark.sql.kv") \
             .mode("overwrite") \
             .option("Key", "status") \
-            .save("{0}/{1}"
-                  .format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
+            .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
 
 # Create a Spark session
 spark = SparkSession.builder \
