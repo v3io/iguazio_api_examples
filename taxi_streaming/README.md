@@ -19,7 +19,7 @@ In addition, the ride-status information is aggregated and saved to a NoSQL driv
 
 > **Note:** For demonstration purposes, the sample generates a CSV input file of randomly generated stream data in place of the real-time data transmission.
 
-<p align="center"><img src="/images/taxi_streaming_diagram.png"/></p>
+<p align="center"><img src="images/taxi_streaming_diagram.png"/></p>
 
 ### Platform Capabilities and APIs
 
