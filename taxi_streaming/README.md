@@ -144,7 +144,7 @@ The ride status can be one of the following:
 <a id="code_walkthrough_create_drivers_stream_sh"></a>
 ### create_drivers_stream.sh &mdash; Create a Stream
 
-The [**create_drivers_stream.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_drivers_stream.sh) bash script creates a **taxi_streaming_example/drivers_stream** stream directory (`$STREAM_PATH`) of the "bigdata" container (`$CONTAINER_NAME`).
+The [**create_drivers_stream.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_drivers_stream.sh) bash script creates a **taxi_streaming_example/drivers_stream** stream directory (`$STREAM_PATH`) in the "bigdata" container (`$CONTAINER_NAME`).
 The stream is created with 12 shards (`$NUM_SHARDS`) and a guaranteed data-retention period of one hour (`$RETENTION_PERIOD`).
 
 > **Note:** See [Step 2](#sample_run_create_drivers_stream_sh) of the "Running the Code" instructions for information about running this script.
