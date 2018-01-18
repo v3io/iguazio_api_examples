@@ -55,7 +55,7 @@ The sample's root directory contains bash shell scripts that simplify the code e
 Follow these steps to run the sample using the scripts.
 
 > **Note:** By default, the sample creates the stream and NoSQL tables in a **taxi_streaming_example** directory in the default "bigdata" container.
-> You can view the directory's contents in the platform's graphical dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/taxi_streaming_example/`).
+> You can view the directory's contents in the platform's graphical dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
 
 1.  <a id="sample_run_create_random_drivers_data_sh"></a>
     Generate data &mdash; use the [**create_random_drivers_data.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_random_drivers_data.sh) script to run the **create_random_drivers_data.py** application, which generates a **drivers_data.csv** file that contains the input data for the stream:
