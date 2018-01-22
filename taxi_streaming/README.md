@@ -236,7 +236,7 @@ The request's JSON-body data payload is created by defining a `Records` JSON arr
 ### consume_drivers_stream_data.py &mdash; Consume the Stream Data
 
 The [**consume_drivers_stream_data.py**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/consume_drivers_stream_data.py) Python application implements the stream-consumer function of reading the data records that were added to the **taxi_streaming_example/drivers_stream** stream (`STREAM_PATH`) of the "bigdata" container (`CONTAINER_NAME`), in parallel to the data ingestion by the producer.
-The data is decoded and used to create NoSQL data tables in the **taxi_streaming_example** "bigdata" container directory (see `NOSQL_TABLES_PATH`).
+The data is used to create NoSQL data tables in the **taxi_streaming_example** "bigdata" container directory (see `NOSQL_TABLES_PATH`).
 
 > **Note:** When the retention period that was set during [the stream's creation](#code_walkthrough_create_drivers_stream_sh) elapses, the earliest data records in the stream might be deleted to make room for newer records.
 > Therefore, the records should be consumed, sequentially, in parallel to the addition of new records by the producer.
@@ -291,7 +291,7 @@ The `archive` stream-data consumption function, which is executed for each strea
     > - The platform's Spark-Streaming Integration module automatically creates a separate Spark stream partition for each platform stream shard (see [**create_drivers_stream.sh**](#code_walkthrough_create_drivers_stream_sh) for the shard-count configuration).
     >     The integration module ensures that when you use the Spark API to read from a stream, the data is consumed simultaneously from all partitions using separate Spark tasks, for optimal performance.
     > 
-    > - The platform's Spark-Streaming Integration module implicitly decodes the Base64 data strings that are read from the stream using the Spark Streaming API.
+    > - The platform implicitly decodes the Base64 record data strings that are read from the stream using the Spark Streaming API.
 
 - Writes the raw data from the Spark DataFrame (`df`) to a NoSQL **drivers_table** table in the **taxi_streaming_example** directory of the "bigdata" container (see `NOSQL_TABLES_PATH`).
     The driver-ID attribute (`driver`) is defined as the table's primary key (`Key`).
