@@ -293,7 +293,7 @@ The `archive` stream-data consumption function, which is executed for each strea
     > 
     > - The platform implicitly decodes the Base64 record data strings that are read from the stream using the Spark Streaming API.
 
-- Writes the raw data from the Spark DataFrame (`df`) to a NoSQL **drivers_table** table in the **taxi_streaming_example** directory of the "bigdata" container (see `NOSQL_TABLES_PATH`).
+- Writes the raw data from the Spark DataFrame (`df`) to a NoSQL **drivers_table** table in the **taxi_streaming_example** directory of the "bigdata" container (`DRIVERS_TABLE_PATH`).
     The driver-ID attribute (`driver`) is defined as the table's primary key (`Key`).
     The `overwrite` mode is used to replace (overwrite) the table if it already exists:
 
@@ -302,19 +302,21 @@ The `archive` stream-data consumption function, which is executed for each strea
         .format("io.iguaz.v3io.spark.sql.kv") \
         .mode("overwrite") \
         .option("Key", "driver") \
-        .save("{0}/{1}".format(NOSQL_TABLES_PATH, "drivers_table/"))
+        .save(DRIVERS_TABLE_PATH)
     ```
 
-    > **Note:** The table path should be specified as an absolute v3io path to a container subdirectory &mdash; `v3io://<container name>/...`.
-    > See the `NOSQL_TABLES_PATH` variable definition in the sample:
+    > **Note:** The table paths should be specified as an absolute v3io path to a container subdirectory &mdash; `v3io://<container name>/...`.
+    > See the table-path and related variable definitions in the sample:
     > ```python
     > CONTAINER_NAME = "bigdata"
     > EXAMPLE_PATH = "/taxi_streaming_example/"
     > NOSQL_TABLES_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH
+    > DRIVERS_TABLE_PATH = NOSQL_TABLES_PATH + "/drivers_table/" 
+    > DRIVERS_STATUS_SUMMARY_TABLE_PATH = NOSQL_TABLES_PATH + "/driver_status_summary_table/" 
     > ```
 
 - Aggregates the drivers' ride-status information (`status` attribute) using the Spark DataFrame `groupby` and `count` methods.
-    Then, saves the information to a NoSQL **driver_status_summary_table** table in the **taxi_streaming_example** directory of the "bigdata" container (see `NOSQL_TABLES_PATH`).
+    Then, saves the information to a NoSQL **driver_status_summary_table** table in the **taxi_streaming_example** directory of the "bigdata" container (`DRIVERS_STATUS_SUMMARY_TABLE_PATH`).
     The table's primary-key attribute (column) is `status`, which signifies the driver's current ride status &mdash; "Available", "Busy', or "Passenger" (see the descriptions in the [**create_random_drivers_data.py**](#code_walkthrough_create_random_drivers_data_py) walkthrough).
     The table has an additional "count" attribute (column) that stores the number of drivers in each status.
     The `overwrite` mode is used to replace (overwrite) the table if it already exists:
@@ -325,7 +327,8 @@ The `archive` stream-data consumption function, which is executed for each strea
     gdf.write \
         .format("io.iguaz.v3io.spark.sql.kv") \
         .mode("overwrite") \
-        .option("Key", "status").save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
+        .option("Key", "status") \
+        .save(DRIVERS_STATUS_SUMMARY_TABLE_PATH)
     ```
 
 ## Cleanup
