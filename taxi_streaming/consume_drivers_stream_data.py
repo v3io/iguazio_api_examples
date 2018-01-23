@@ -3,7 +3,7 @@ from pyspark.streaming import StreamingContext
 from v3io.spark.streaming import *
 
 # Data-container name
-CONTAINER_NAME="bigdata"
+CONTAINER_NAME = "bigdata"
 
 # Path to the taxi_streaming example directory within the container
 EXAMPLE_PATH = "/taxi_streaming_example/"
