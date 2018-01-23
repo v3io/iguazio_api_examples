@@ -11,7 +11,10 @@ EXAMPLE_PATH = "/taxi_streaming_example/"
 NOSQL_TABLES_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH
 # Stream container-directory path
 STREAM_PATH = EXAMPLE_PATH + "drivers_stream"
-
+# NoSQL drivers-Data table path
+DRIVERS_TABLE_PATH = NOSQL_TABLES_PATH + "/drivers_table/" 
+# NoSQL drivers Ride-Status Summary Table Path
+DRIVERS_STATUS_SUMMARY_TABLE_PATH = NOSQL_TABLES_PATH + "/driver_status_summary_table/" 
 
 # Consume the stream data: read the data and save it to NoSQL tables
 def archive(rdd):
@@ -27,10 +30,8 @@ def archive(rdd):
             .format("io.iguaz.v3io.spark.sql.kv") \
             .mode("overwrite") \
             .option("Key", "driver") \
-            .save("{0}/{1}".format(NOSQL_TABLES_PATH, "drivers_table/"))
+	    .save(DRIVERS_TABLE_PATH)
 
-        # Group the driver ride-status data for all drivers, and count the
-        # number of drivers in each status
         gdf = df.groupby("status").count()
         # gdf.show()
 
@@ -39,7 +40,7 @@ def archive(rdd):
             .format("io.iguaz.v3io.spark.sql.kv") \
             .mode("overwrite") \
             .option("Key", "status") \
-            .save("{0}/{1}".format(NOSQL_TABLES_PATH, "driver_status_summary_table/"))
+	    .save(DRIVERS_STATUS_SUMMARY_TABLE_PATH)
 
 # Create a Spark session
 spark = SparkSession.builder \
