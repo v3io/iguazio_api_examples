@@ -17,8 +17,8 @@ The [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/maste
 An application in the company's cars sends to the platform the cars' current GPS coordinates and the IDs of the drivers.
 In addition, the drivers report their current ride status (available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
-A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a NoSQL data table in a platform data container.
-In addition, the ride-status information is aggregated and saved to a NoSQL driver-status summary table that shows the current number of drivers in each status.
+A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a table in a platform data container.
+In addition, the ride-status information is aggregated and saved to a driver-status summary table that shows the current number of drivers in each status.
 
 > **Note:** For demonstration purposes, the sample generates a CSV input file of randomly generated stream data in place of the real-time data transmission.
 
@@ -36,7 +36,7 @@ The sample demonstrates the following platform capabilities and API uses:
 
     - Read data from the stream into a Spark DataFrame, in parallel to the data ingestion, using the Spark Streaming API and the platform's Spark-Streaming Integration API.
 
-    - Save the stream data &mdash; which includes the drivers' IDs, location, and ride status &mdash; to a NoSQL drivers-data table, using the platform's NoSQL Spark DataFrame.
+    - Save the stream data &mdash; which includes the drivers' IDs, location, and ride status &mdash; to a drivers-data table, using the platform's NoSQL Spark DataFrame.
 
     - Aggregate the driver-status data and save the information to a driver-status summary table that contains information about the current number of drivers in each status, using the platform's NoSQL Spark DataFrame.
 
