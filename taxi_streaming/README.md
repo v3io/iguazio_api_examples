@@ -1,4 +1,6 @@
-# Taxi-Streaming Example
+# Ride-Hailing Streaming Example
+
+Following is an outline and detailed code walkthrough of the **taxi_streaming** ride-hailing streaming example.
 
 In this document
 
@@ -11,11 +13,12 @@ In this document
 
 ### Use-Case Story
 
-The taxi-streaming example &mdash; [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) &mdash; demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a taxi company that provides ride-hailing services in the city of London and its surroundings.
-The taxis send to the platform their current GPS coordinates and the IDs of the drivers, and the drivers also report their current ride status (available, busy, or with a passenger).
+The [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) example demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a ride-hailing company that provides services in the city of London and its surroundings.
+An application in the company's cars sends to the platform the cars' current GPS coordinates and the IDs of the drivers.
+In addition, the drivers report their current ride status (available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
-A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a NoSQL data table in a platform data container.
-In addition, the ride-status information is aggregated and saved to a NoSQL driver-status summary table that shows the current number of drivers in each status.
+A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a table in a platform data container.
+In addition, the ride-status information is aggregated and saved to a driver-status summary table that shows the current number of drivers in each status.
 
 > **Note:** For demonstration purposes, the sample generates a CSV input file of randomly generated stream data in place of the real-time data transmission.
 
@@ -33,13 +36,13 @@ The sample demonstrates the following platform capabilities and API uses:
 
     - Read data from the stream into a Spark DataFrame, in parallel to the data ingestion, using the Spark Streaming API and the platform's Spark-Streaming Integration API.
 
-    - Save the stream data &mdash; which includes the drivers' IDs, location, and ride status &mdash; to a NoSQL drivers-data table, using the platform's NoSQL Spark DataFrame.
+    - Save the stream data &mdash; which includes the drivers' IDs, location, and ride status &mdash; to a drivers-data table, using the platform's NoSQL Spark DataFrame.
 
     - Aggregate the driver-status data and save the information to a driver-status summary table that contains information about the current number of drivers in each status, using the platform's NoSQL Spark DataFrame.
 
 ## Running the Sample
 
-> **Note:** Contact iguazio to schedule a live demo of the taxi-streaming sample, including an extra UI application that shows a heat map of the taxis' current locations.
+> **Note:** Contact iguazio to schedule a live demo of the ride-hailing streaming sample, including an extra UI application that shows a heat map of the cars' current locations.
 
 ### Copying the Sample to the Platform
 
@@ -54,8 +57,8 @@ Alternatively, you can clone the GitHub repository or download the [**taxi_strea
 The sample's root directory contains bash shell scripts that simplify the code execution.
 Follow these steps to run the scripts and test the sample in less than two minutes; (the most time-consuming task is the generation of the random test data):
 
-> **Note:** By default, the sample creates the stream and NoSQL tables in a **taxi_streaming_example** directory in the default "bigdata" container.
-> You can view the directory's contents in the platform's graphical dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
+> **Note:** By default, the sample creates the stream and tables in a **taxi_streaming_example** directory in the default "bigdata" container.
+> You can view the directory's contents in the platform dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
 
 1.  <a id="sample_run_create_random_drivers_data_sh"></a>
     Generate data &mdash; use the [**create_random_drivers_data.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_random_drivers_data.sh) script to run the **create_random_drivers_data.py** application, which generates a **drivers_data.csv** file that contains the input data for the stream:
@@ -130,7 +133,7 @@ Real-life scenarios will typically use a more efficient method to retrieve the a
 
 > **Note:** You can use the **create_random_drivers_data.sh** bash script to run the **create_random_drivers_data.py** application, as explained in [Step 1](#sample_run_create_random_drivers_data_sh) of the "Running the Code" instructions.
 
-The generated stream data includes a numeric driver ID, a data-generation timestamp, the taxi's current GPS coordinates, and the driver's current ride status.
+The generated stream data includes a numeric driver ID, a data-generation timestamp, the car's current GPS coordinates, and the driver's current ride status.
 The ride status can be one of the following:
 
 - "Available" &mdash; the driver is available for a new ride.
@@ -338,7 +341,7 @@ For example, if the stream and NoSQL tables were saved to a **taxi_streaming_exa
 ```sh
 rm -rf /mnt/datalake/bigdata/taxi_streaming_example/
 ```
-Files in the container directory can also be deleted from the platform's dashboard:
+Files in the container directory can also be deleted from the platform dashboard:
 select the container from the **Containers** view, select the **Browse** tab, and use the **Delete** action-toolbar option to delete the selected files or directories.
 
 To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot use the `rm -rf` command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
