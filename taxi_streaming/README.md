@@ -5,11 +5,14 @@ Following is an outline and detailed code walkthrough of the **taxi_streaming** 
 In this document
 
 - [Overview](#overview)
-- [Running the Sample](#running-the-sample)
+- [Running the Example](#running-the-example)
 - [Code Walkthrough](#code-walkthrough)
 - [Cleanup](#cleanup)
 
 ## Overview
+
+- [Use-Case Story](#use-case-story)
+- [Platform Capabilities and APIs](#platform-capabilities-and-apis)
 
 ### Use-Case Story
 
@@ -18,7 +21,7 @@ An application in the company's cars sends to the platform the cars' current GPS
 In addition, the drivers report their current ride status (available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
 A consumer application reads the data from the stream, in parallel to the data ingestion, and saves it to a table in a platform data container.
-In addition, the ride-status information is aggregated and saved to a driver-status summary table that shows the current number of drivers in each status.
+The ride-status information is aggregated and saved to a driver-status summary table that shows the current number of drivers in each status.
 
 > **Note:** For demonstration purposes, the sample generates a CSV input file of randomly generated stream data in place of the real-time data transmission.
 
@@ -40,11 +43,14 @@ The sample demonstrates the following platform capabilities and API uses:
 
     - Aggregate the driver-status data and save the information to a driver-status summary table that contains information about the current number of drivers in each status, using the platform's NoSQL Spark DataFrame.
 
-## Running the Sample
+## Running the Example
+
+- [Copying the Example to the Platform](#copying-the-example-to-the-platform)
+- [Running the Code](#running-the-code)
 
 > **Note:** Contact iguazio to schedule a live demo of the ride-hailing streaming sample, including an extra UI application that shows a heat map of the cars' current locations.
 
-### Copying the Sample to the Platform
+### Copying the Example to the Platform
 
 To run the sample, you must first copy the sample's code files to an instance of the platform.
 You can select to clone the [v3io/iguazio_api_examples](https://github.com/v3io/iguazio_api_examples) GitHub repository directly to any of the platform's application nodes.
@@ -81,7 +87,7 @@ Follow these steps to run the scripts and test the sample in less than two minut
     For more information, see the [**create_drivers_stream.sh**](#code_walkthrough_create_drivers_stream_sh) code walkthrough.
 
 3.  <a id="sample_run_spark_submit_cmd_sh"></a>
-    Consume the stream data &mdash; use the [**spark-submit_cmd.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/spark-submit_cmd.sh) script to run a **spark-submit** CLI command that starts a Spark job for running the **consume_drivers_stream_data.py** consumer application.
+    Consume the stream data &mdash; use the [**spark-submit_cmd.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/spark-submit_cmd.sh) script to run a `spark-submit` CLI command that starts a Spark job for running the **consume_drivers_stream_data.py** consumer application.
       The application reads data continuously from the stream and uses the data to create **drivers_table** and **driver_status_summary_table** NoSQL tables in the **taxi_streaming_example** directory of the "bigdata" container:
 
     ```sh
@@ -297,7 +303,7 @@ The `archive` stream-data consumption function, which is executed for each strea
     > - The platform implicitly decodes the Base64 record data strings that are read from the stream using the Spark Streaming API.
 
 - Writes the raw data from the Spark DataFrame (`df`) to a NoSQL **drivers_table** table in the **taxi_streaming_example** directory of the "bigdata" container (`DRIVERS_TABLE_PATH`).
-    The driver-ID attribute (`driver`) is defined as the table's primary key (`Key`).
+    The driver-ID attribute (`"driver"`) is defined as the table's primary key (`Key`).
     The `overwrite` mode is used to replace (overwrite) the table if it already exists:
 
     ```python
@@ -318,10 +324,10 @@ The `archive` stream-data consumption function, which is executed for each strea
     > DRIVERS_STATUS_SUMMARY_TABLE_PATH = NOSQL_TABLES_PATH + "/driver_status_summary_table/" 
     > ```
 
-- Aggregates the drivers' ride-status information (`status` attribute) using the Spark DataFrame `groupby` and `count` methods.
+- Aggregates the drivers' ride-status information (`"status"` attribute) using the Spark DataFrame `groupby` and `count` methods.
     Then, saves the information to a NoSQL **driver_status_summary_table** table in the **taxi_streaming_example** directory of the "bigdata" container (`DRIVERS_STATUS_SUMMARY_TABLE_PATH`).
-    The table's primary-key attribute (column) is `status`, which signifies the driver's current ride status &mdash; "Available", "Busy', or "Passenger" (see the descriptions in the [**create_random_drivers_data.py**](#code_walkthrough_create_random_drivers_data_py) walkthrough).
-    The table has an additional "count" attribute (column) that stores the number of drivers in each status.
+    The table's primary-key attribute (column) is `"status"`, which signifies the driver's current ride status &mdash; "Available", "Busy', or "Passenger" (see the descriptions in the [**create_random_drivers_data.py**](#code_walkthrough_create_random_drivers_data_py) walkthrough).
+    The table has an additional `"count"` attribute (column) that stores the number of drivers in each status.
     The `overwrite` mode is used to replace (overwrite) the table if it already exists:
 
     ```python
