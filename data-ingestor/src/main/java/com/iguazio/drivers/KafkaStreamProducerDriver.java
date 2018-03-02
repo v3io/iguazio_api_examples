@@ -52,7 +52,7 @@ public class KafkaStreamProducerDriver {
 		Random random = new Random();
 
 		for (int x = 0; x <= 1000; x++) {
-			int location = random.nextInt(9);
+			int location = random.nextInt(6);
 			for (int i = 0; i <= 300; i++) {
 				int driver = random.nextInt(5000);
 
