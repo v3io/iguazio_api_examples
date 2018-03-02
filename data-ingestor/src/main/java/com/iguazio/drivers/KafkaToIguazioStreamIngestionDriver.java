@@ -48,7 +48,7 @@ public class KafkaToIguazioStreamIngestionDriver implements Serializable {
 	}
 
 	public void run() throws InterruptedException, IOException {
-		Collection<String> topics = Arrays.asList("cars-new");
+		Collection<String> topics = Arrays.asList("cars");
 
 		Map<String, Object> kafkaParams = new HashMap<>();
 		kafkaParams.put("bootstrap.servers", "172.17.0.3:9092");

@@ -62,7 +62,7 @@ public class KafkaStreamProducerDriver {
 				double latitude = locations[location][1]
 						+ ThreadLocalRandom.current().nextDouble((double) -radius, (double) radius);
 
-				kafkaProducer.send(new ProducerRecord<String, String>("cars-new", Integer.toString(driver),
+				kafkaProducer.send(new ProducerRecord<String, String>("cars", Integer.toString(driver),
 						driver + "," + System.currentTimeMillis() + "," + longitude + "," + latitude + ","
 								+ driverStatus[random.nextInt(2)]));
 			}
