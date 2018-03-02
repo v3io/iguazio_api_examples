@@ -53,7 +53,7 @@ public class KafkaToKvIngestionDriver implements Serializable {
 	}
 
 	public void run() throws InterruptedException {
-		Collection<String> topics = Arrays.asList("cars-new");
+		Collection<String> topics = Arrays.asList("cars");
 
 		Map<String, Object> kafkaParams = new HashMap<>();
 		kafkaParams.put("bootstrap.servers", "0.0.0.0:32773");
