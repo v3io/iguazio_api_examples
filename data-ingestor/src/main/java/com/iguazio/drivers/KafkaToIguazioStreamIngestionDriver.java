@@ -51,7 +51,7 @@ public class KafkaToIguazioStreamIngestionDriver implements Serializable {
 		Collection<String> topics = Arrays.asList("cars");
 
 		Map<String, Object> kafkaParams = new HashMap<>();
-		kafkaParams.put("bootstrap.servers", "172.17.0.3:9092");
+		kafkaParams.put("bootstrap.servers", "0.0.0.0:32773");
 		kafkaParams.put("auto.commit.interval.ms", "1000");
 		kafkaParams.put("auto.offset.reset", "earliest");
 		kafkaParams.put("session.timeout.ms", "30000");
