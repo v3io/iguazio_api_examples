@@ -22,7 +22,7 @@ public class KafkaStreamProducerDriver {
 
 	public void init() {
 
-		props.put("bootstrap.servers", "10.90.1.71:9092");
+		props.put("bootstrap.servers", "kafka:9092");
 		props.put("acks", "all");
 		props.put("retries", 0);
 		props.put("batch.size", 1500);
