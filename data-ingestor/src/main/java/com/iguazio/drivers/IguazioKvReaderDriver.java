@@ -30,8 +30,8 @@ public class IguazioKvReaderDriver {
 
 		SQLContext sqlCtx = new SQLContext(session);
 
-		Dataset<Row> df = sqlCtx.read().format("io.iguaz.v3io.spark.sql.kv").load("/cars-test-kv");
-		df.show();
+		Dataset<Row> df = sqlCtx.read().format("io.iguaz.v3io.spark.sql.kv").load("/cars-kv");
+		df.show(10);
 
 	}
 
