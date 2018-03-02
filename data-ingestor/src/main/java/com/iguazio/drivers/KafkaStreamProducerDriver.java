@@ -6,8 +6,6 @@ import java.util.Random;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import io.netty.util.internal.ThreadLocalRandom;
-
 public class KafkaStreamProducerDriver {
 
 	private static Properties props = new Properties();
@@ -57,11 +55,8 @@ public class KafkaStreamProducerDriver {
 			for (int i = 0; i <= 300; i++) {
 				int driver = random.nextInt(5000);
 
-				double longitude = locations[location][0]
-						+ ThreadLocalRandom.current().nextDouble((double) -radius, (double) radius);
-				double latitude = locations[location][1]
-						+ ThreadLocalRandom.current().nextDouble((double) -radius, (double) radius);
-
+				double longitude = locations[location][0] + random.nextDouble() * (-radius - radius) + -radius;
+				double latitude = locations[location][1] + random.nextDouble() * (-radius - radius) + -radius;
 				kafkaProducer.send(new ProducerRecord<String, String>("cars", Integer.toString(driver),
 						driver + "," + System.currentTimeMillis() + "," + longitude + "," + latitude + ","
 								+ driverStatus[random.nextInt(2)]));
