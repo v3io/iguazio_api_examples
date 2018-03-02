@@ -3,7 +3,7 @@ this repository contains example spark java programs to integrate various Iguazi
 
 kafka stream producer driver
 --------------------------------
-spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar,/home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-object-dataframe.jar   --class com.iguazio.drivers.KafkaStreamProducerDriver data-ingestor-0.0.1-SNAPSHOT.jar
+spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar --class com.iguazio.drivers.KafkaStreamProducerDriver data-ingestor-0.0.1-SNAPSHOT.jar
 
 
 KafkaStreamProducerDriver program will produce a random kafka stream in cars topic in the following comma separated string format
@@ -18,7 +18,7 @@ KafkaToIguazioStreamIngestionDriver program can be used to consume from kafka "c
 
 iguazio stream consumer
 --------------------------------
-spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar,/home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-streaming.jar  --class com.iguazio.drivers.IguazioStreamConsumerDriver data-ingestor-0.0.1-SNAPSHOT.jar
+spark-submit --jars /home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-streaming.jar  --class com.iguazio.drivers.IguazioStreamConsumerDriver data-ingestor-0.0.1-SNAPSHOT.jar
 
 IguazioStreamConsumerDriver program can be used to consume from  stream topic "cars-stream" inside iguazio unified data platform.
 
