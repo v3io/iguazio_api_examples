@@ -47,8 +47,8 @@ public class StreamIngestionVoidFunction implements VoidFunction<JavaRDD<Car>> {
 
 			@Override
 			public void call(Car arg0) throws Exception {
-				ProducerRecord rec = new ProducerRecord("/cars-stream", (short) 0, Longs.toByteArray(arg0.getCarId()),
-						arg0.toString().getBytes());
+				ProducerRecord rec = new ProducerRecord("/cars-stream", (short) 0,
+						Longs.toByteArray(arg0.getDriverId()), arg0.toString().getBytes());
 				getStreamingOperations().putRecord(rec, new V3IOPutRecordCallback() {
 
 					@Override

@@ -2,76 +2,66 @@ package com.iguazio.bo;
 
 public class Car {
 
-	private String color;
-	private String vendor;
-	private int mfgYear;
-	private String state;
-	private long carId;
-	private long speed;
+	private long driverId;
+	private long timeStamp;
+	private double longitude;
+	private double latitude;
+	private String status;
 
 	public Car(String[] arr) {
-		this.carId = new Long(arr[0]);
-		this.color = arr[1];
-		this.vendor = arr[2];
-		this.mfgYear = new Integer(arr[3]);
-		this.state = arr[4];
-		this.speed = new Long(arr[5]);
+		this.driverId = new Long(arr[0]);
+		this.timeStamp = new Long(arr[1]);
+		this.longitude = new Double(arr[2]);
+		this.latitude = new Double(arr[3]);
+		this.status = arr[4];
 
 	}
 
-	public String getColor() {
-		return color;
+	public long getDriverId() {
+		return driverId;
 	}
 
-	public void setColor(String color) {
-		this.color = color;
+	public void setDriverId(long driverId) {
+		this.driverId = driverId;
 	}
 
-	public String getVendor() {
-		return vendor;
+	public long getTimeStamp() {
+		return timeStamp;
 	}
 
-	public void setVendor(String vendor) {
-		this.vendor = vendor;
+	public void setTimeStamp(long timeStamp) {
+		this.timeStamp = timeStamp;
 	}
 
-	public int getMfgYear() {
-		return mfgYear;
+	public double getLongitude() {
+		return longitude;
 	}
 
-	public void setMfgYear(int mfgYear) {
-		this.mfgYear = mfgYear;
+	public void setLongitude(double longitude) {
+		this.longitude = longitude;
 	}
 
-	public String getState() {
-		return state;
+	public double getLatitude() {
+		return latitude;
 	}
 
-	public void setState(String state) {
-		this.state = state;
+	public void setLatitude(double latitude) {
+		this.latitude = latitude;
 	}
 
-	public long getCarId() {
-		return carId;
+	public String getStatus() {
+		return status;
 	}
 
-	public void setCarId(long carId) {
-		this.carId = carId;
-	}
-
-	public long getSpeed() {
-		return speed;
-	}
-
-	public void setSpeed(long speed) {
-		this.speed = speed;
+	public void setStatus(String status) {
+		this.status = status;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (carId ^ (carId >>> 32));
+		result = prime * result + (int) (driverId ^ (driverId >>> 32));
 		return result;
 	}
 
@@ -84,14 +74,14 @@ public class Car {
 		if (getClass() != obj.getClass())
 			return false;
 		Car other = (Car) obj;
-		if (carId != other.carId)
+		if (driverId != other.driverId)
 			return false;
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return carId + ", " + color + ", " + vendor + ", " + mfgYear + ", " + state + ", " + speed;
+		return driverId + ", " + timeStamp + ", " + longitude + ", " + latitude + ", " + status;
 	}
 
 }

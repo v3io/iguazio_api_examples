@@ -1,4 +1,5 @@
 package com.iguazio.drivers;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -47,7 +48,7 @@ public class KafkaToIguazioStreamIngestionDriver implements Serializable {
 	}
 
 	public void run() throws InterruptedException, IOException {
-		Collection<String> topics = Arrays.asList("cars");
+		Collection<String> topics = Arrays.asList("cars-new");
 
 		Map<String, Object> kafkaParams = new HashMap<>();
 		kafkaParams.put("bootstrap.servers", "172.17.0.3:9092");
