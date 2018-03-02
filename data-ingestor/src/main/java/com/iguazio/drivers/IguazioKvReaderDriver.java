@@ -5,11 +5,11 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 
-public class DataFrameReaderDriver {
+public class IguazioKvReaderDriver {
 
 	private SparkSession session;
 
-	public DataFrameReaderDriver() {
+	public IguazioKvReaderDriver() {
 
 		init();
 	}
@@ -21,7 +21,7 @@ public class DataFrameReaderDriver {
 	}
 
 	public static void main(String[] args) {
-		DataFrameReaderDriver driver = new DataFrameReaderDriver();
+		IguazioKvReaderDriver driver = new IguazioKvReaderDriver();
 		driver.run();
 
 	}
@@ -30,7 +30,7 @@ public class DataFrameReaderDriver {
 
 		SQLContext sqlCtx = new SQLContext(session);
 
-		Dataset<Row> df = sqlCtx.read().format("io.iguaz.v3io.spark.sql.kv").load("/cars-test");
+		Dataset<Row> df = sqlCtx.read().format("io.iguaz.v3io.spark.sql.kv").load("/cars-test-kv");
 		df.show();
 
 	}
