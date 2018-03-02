@@ -16,7 +16,7 @@ public class KVIngestionVoidFunction implements VoidFunction<JavaRDD<Car>> {
 		SparkSession session = new SparkSession(rdd.context());
 		Dataset<Row> df = session.createDataFrame(rdd, Car.class);
 
-		df.write().format("io.iguaz.v3io.spark.sql.kv").mode("append").option("key", "carId").save("/cars-kv");
+		df.write().format("io.iguaz.v3io.spark.sql.kv").mode("append").option("key", "driverId").save("/cars-kv");
 
 		System.out.println("count is " + df.count());
 
