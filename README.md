@@ -7,7 +7,7 @@ spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar --class c
 
 
 KafkaStreamProducerDriver program will produce a random kafka stream in cars topic in the following comma separated string format
-driverid,timestamp,longitude,latitude,status
+(driverid,timestamp,longitude,latitude,status)
 
 kafka to iguazio stream
 --------------------------------
