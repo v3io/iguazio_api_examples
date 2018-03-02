@@ -10,7 +10,7 @@ import io.netty.util.internal.ThreadLocalRandom;
 
 public class KafkaStreamProducerDriver {
 
-	private static Properties props;
+	private static Properties props = new Properties();
 	private static KafkaProducer<String, String> kafkaProducer;
 
 	public static void main(String[] args) {
