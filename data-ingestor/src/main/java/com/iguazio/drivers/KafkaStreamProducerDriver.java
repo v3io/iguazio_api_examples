@@ -19,7 +19,6 @@ public class KafkaStreamProducerDriver {
 	}
 
 	public void init() {
-
 		props.put("bootstrap.servers", "0.0.0.0:32773");
 		props.put("acks", "all");
 		props.put("retries", 0);
@@ -50,16 +49,16 @@ public class KafkaStreamProducerDriver {
 		Random random = new Random();
 
 		for (int x = 0; x <= 1000; x++) {
-			int location = random.nextInt(6);
-			int radius = random.nextInt(5);
+			int location = random.nextInt(7);
+			int radius = random.nextInt(6);
 			for (int i = 0; i <= 300; i++) {
-				int driver = random.nextInt(5000);
+				int driver = random.nextInt(5001);
 
 				double longitude = locations[location][0] + random.nextDouble() * (-radius - radius) + -radius;
 				double latitude = locations[location][1] + random.nextDouble() * (-radius - radius) + -radius;
 				kafkaProducer.send(new ProducerRecord<String, String>("cars", Integer.toString(driver),
 						driver + "," + System.currentTimeMillis() + "," + longitude + "," + latitude + ","
-								+ driverStatus[random.nextInt(2)]));
+								+ driverStatus[random.nextInt(3)]));
 			}
 			try {
 				Thread.sleep(5000);
