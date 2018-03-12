@@ -1,5 +1,6 @@
 # iguazio-api-java-examples
 this repository contains example spark java programs to integrate various Iguazio API's
+All the below drivers can run in parallel to simulate a end to end flow of consumpting data from Kafka , ingesting it in KV or stream and reading from KV/Stream in real time.
 
 kafka stream producer driver
 --------------------------------
