@@ -64,7 +64,7 @@ The sample's root directory contains bash shell scripts that simplify the code e
 Follow these steps to run the scripts and test the sample in less than two minutes; (the most time-consuming task is the generation of the random test data):
 
 > **Note:** By default, the sample creates the stream and tables in a **taxi_streaming_example** directory in the default "bigdata" container.
-> You can view the directory's contents in the platform dashboard (select the container from the **Containers** view and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
+> You can view the directory's contents in the platform dashboard (select the container from the main **Data** screen and then select the **Browse** tab) or from the command line via your platform's distributed file system (DFS) mount (for example, `ls /mnt/datalake/bigadata/taxi_streaming_example/`).
 
 1.  <a id="sample_run_create_random_drivers_data_sh"></a>
     Generate data &mdash; use the [**create_random_drivers_data.sh**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_random_drivers_data.sh) script to run the **create_random_drivers_data.py** application, which generates a **drivers_data.csv** file that contains the input data for the stream:
@@ -348,7 +348,7 @@ For example, if the stream and NoSQL tables were saved to a **taxi_streaming_exa
 rm -rf /mnt/datalake/bigdata/taxi_streaming_example/
 ```
 Files in the container directory can also be deleted from the platform dashboard:
-select the container from the **Containers** view, select the **Browse** tab, and use the **Delete** action-toolbar option to delete the selected files or directories.
+select the container from the main **Data** screen, select the **Browse** tab, and use the **Delete** action-toolbar option to delete the selected files or directories.
 
 To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot use the `rm -rf` command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
 This script deletes the **taxi_streaming_example/drivers_stream** stream directory by using the `curl` CLI to issue recursive `XDELETE` commands.
