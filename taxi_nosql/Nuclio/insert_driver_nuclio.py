@@ -3,17 +3,13 @@ import requests
 import json
 import csv
 import time
-import igz_nosql_web
-
-#PATH_IN_URL = '/1/drivers/'
-DRIVERS_PATH_IN_URL = '/1/drivers/'
-CELLS_PATH_IN_URL   = '/1/cells/'
 
 #------------
-BASE_URL = 'http://192.168.218.25:32418'
+BASE_URL = 'http://10.90.1.171:31223'
+INPUT_FILE = '/home/iguazio/iguazio_api_examples/taxi_streaming/drivers_data.csv'
 
 # read CSV
-INPUT_FILE = str(sys.argv[1])
+#INPUT_FILE = str(sys.argv[1])
 
 start = time.time()
 counter = 0
@@ -25,18 +21,11 @@ with open(INPUT_FILE) as csvfile:
     # Go over the rows and get the driver id and cell id
     for row in readCSV:
         driver_id = row[0]
-        lat = row[1]
-        long = row[2]
-        speed = row[3]
-        accurancy = row[4]
-        time_stamp = row[5]
-        trip_id = row[6]
-        status = row[7]
-        cell_id = row[8]
-        dsd_id = row[9]
-        region_name = row[10]
-        event_date = row[11]
-        body = driver_id + ',' + lat + ',' + long + ',' + speed + ',' + time_stamp + ',' + cell_id
+        time_stamp = row[1]
+        lat = row[2]
+        long = row[3]
+        status = row[3]
+        body = driver_id + ',' + time_stamp + ',' + lat + ',' + long + ',' + status
         #print(body)
 
         # call the update request
