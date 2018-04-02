@@ -106,13 +106,14 @@ def parse_arguments():
 
     parser.add_argument("-i", "--ip",
                         type = str,
-                        required = True,
-                        help = "IP address of the target")
+                        default = "127.0.0.1",
+                        required = False,
+                        help = "IP address of the web-gateway service. Default = localhost")
     parser.add_argument("-p", "--port",
                         type = int,
                         default = -1,
                         required = False,
-                        help = "TCP port of the target. Default is 8081 for http and 8443 for https")
+                        help = "TCP port of the web-gateway. Default = 8081 for http / 8443 for https")
     parser.add_argument("-c", "--container",
                         type = str,
                         required = True,
@@ -120,39 +121,40 @@ def parse_arguments():
     parser.add_argument("-t", "--table-path",
                         type = str,
                         required = True,
-                        help = "Path of the table within the container. Up to two levels are supported")
-    parser.add_argument("-r", "--table-root",
+                        help = "Path to the table's root directory within the container. Note: For Presto, the table must reside in the container's root directory.")
+    parser.add_argument("-r", "--read-partition",
                         type = str,
+                        default = "/",
                         required = False,
-                        help = "Root of the table (on the same container). Useful in case of partitioning")
+                        help = "Path to the directory representing the partition to read within the table path. Default = '/' - the table's root directory. ")
     parser.add_argument("-s", "--secure",
                         action = "store_true",
                         required = False,
-                        help = "Use https instead of http (without a certificate verification)")
+                        help = "Use HTTPS instead of HTTP (without a certificate verification)")
     parser.add_argument("-u", "--user",
                         type = str,
                         required = False,
-                        help = "User name if authentication is needed. Must be provided with a password using the -w parameter")
+                        help = "Username to be used for HTTP authentication together with the password set with the -w or --password option.")
     parser.add_argument("-w", "--password",
                         type = str,
                         required = False,
-                        help = "Password if authentication is needed. Must be provided with a user name using the -u parameter")
+                        help = "Password to be used for HTTP authentication together with the username set with the -u or --user option.")
     parser.add_argument("-l", "--limit",
                         type = int,
                         default = 10,
-                        help = "Limit the number of records scanned. Default is 10. Non-positive value means no limit (full table scan)")
-    parser.add_argument("-n", "--virtual-nodes",
+                        help = "The number of table items to scan to determine the schema. A non-positive value means no limit (full table scan). Default = 10")
+    parser.add_argument("-g", "--segments",
                         type = int,
                         default = 36,
-                        help = "Define execution parallelism")
+                        help = "The number of segments to use in the table items scan. A value higher than 1 configures a parallel multi-segment scan. Default = 36.")
     parser.add_argument("-d", "--dry-run",
                         action = "store_true",
                         required = False,
-                        help = "Dry run. Don't write output file")
+                        help = "Perform a dry run: perform the configured table scan, but don't create the output schema file.")
     parser.add_argument("-v", "--verbose",
                         action = "count",
                         default = 0,
-                        help = "Increase the verbosity of output")
+                        help = "Increase the verbosity level of the command-line output")
     args = parser.parse_args()
     # custom parameter handling
     if args.port == -1: # if port not specified, assign port defaults based on value of "secure"
@@ -160,8 +162,6 @@ def parse_arguments():
             args.port = DEF_HTTPS_PORT
         else:
             args.port = DEF_HTTP_PORT
-
-    args.table_root = args.table_path if args.table_root is None else args.table_root
 
     if (args.user is None and args.password is not None) or (args.user is not None and args.password is None):
         parser.error("User and password must both be provided if one is provided")
@@ -180,10 +180,14 @@ def main():
     protocol = "https" if args.secure else "http"
 
     base_url = protocol + "://" + args.ip + ":" + str(args.port)
-    path = "/" + args.container + "/" + args.table_path + "/"
+    path_to_write = "/" + args.container + "/" + args.table_path + "/"
+    if args.read_partition != "/":
+        path = path_to_write + args.read_partition + "/"
+    else:
+        path = path_to_write
 
     if args.verbose >= 1:
-        print("Base url: " + str(base_url) + ", path: " + str(path))
+        print("Base url: " + str(base_url) + ", path: " + str(path) + ", path to write: " + path_to_write)
 
     s = requests.Session()
     if args.user is not None and args.password is not None:
@@ -193,7 +197,7 @@ def main():
         s.verify = False
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-    response_list = igz_nosql_web.ngx_get_items_request_parallel(s, base_url, path, limit_amount=args.limit, exp_attrs=["*"], parallelism=args.virtual_nodes, verbose=args.verbose)
+    response_list = igz_nosql_web.ngx_get_items_request_parallel(s, base_url, path, limit_amount=args.limit, exp_attrs=["*"], parallelism=args.segments, verbose=args.verbose)
 
     if response_list is None:
         print("Program aborted due to errors")
@@ -211,13 +215,19 @@ def main():
     output_json = build_schema_from_item_json_list(response_list[0], args.verbose)
 
     if not args.dry_run:
-        put_res = igz_nosql_web.ngx_put_object(s, base_url, path, SCHEMA_FILE_NAME, output_json)
+        if args.verbose >= 1:
+            print("Schema:")
+            print(output_json)
+
+        put_res = igz_nosql_web.ngx_put_object(s, base_url, path_to_write, SCHEMA_FILE_NAME, output_json)
         if put_res.status_code != requests.codes.ok and put_res.status_code != requests.codes.no_content:
             print(
             "Error encountered while writing .#schema file. Code: " + str(put_res.status_code) + ". Description: " + str(httplib.responses[put_res.status_code]))
         exit(1)
     else:
-            print("Dry run - not writing schema")
+            print("Schema:")
+            print(output_json)
+            print("WARNING: Dry run - not writing schema")
     exit(0)
 
 main()

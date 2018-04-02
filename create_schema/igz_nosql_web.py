@@ -120,7 +120,6 @@ class __get_items_thread(threading.Thread):
             print("Error establishing connection: " + str(e))
             self.result[self.index] = None
 
-
 #
 # Construct and send GetItems web request
 # returns an array of objects

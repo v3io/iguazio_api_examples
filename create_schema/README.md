@@ -1,10 +1,14 @@
-# CreateSchema
+# create_schema
 
-Scans records in an existing table, and create the .#schema file from it.
+Scans records in an existing table, validates consistency of available attributes across multiple records, and create the .#schema file from one of the records.
 
 Run ./create_schema --help for full usage
 
 ## Change-log
+### Version 1.1
+* Change multiple command line attributes to improve usability
+* TODO: add version information to command line attributes
+
 ### Initial version
 * All features are supported via command line arguments
 * Supports http and https over default and custom ports
