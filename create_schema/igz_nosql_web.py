@@ -15,7 +15,7 @@ def ngx_put_object(
 
 
 #
-# Construct and send GetItem web request
+# Construct and send a GetItem web request
 #
 def ngx_get_item_request(
         s, base_url, path_in_url, table_name=None, key=None, exp_attrs=None, expected_result=requests.codes.ok):
@@ -45,8 +45,8 @@ def ngx_get_item_request(
     return response_json
 
 #
-# Construct and send GetItems web request
-# returns an array of objects
+# Construct and send a GetItems web request
+# Returns an array of objects
 #
 def ngx_get_items_request(
         s, base_url, path_in_url, table_name=None, key=None, exp_attrs=None, limit_amount=10,
@@ -68,7 +68,7 @@ def ngx_get_items_request(
             request_json["AttributesToGet"] += ","
         request_json["AttributesToGet"] += attr_name
 
-    # break when reply shows no more records, or limit reached
+    # Break when the reply shows no more items or the limit is reached
     while True:
         payload = json.dumps(request_json)
         headers = {V3IO_HEADER_FUNCTION: 'GetItems'}
@@ -121,8 +121,8 @@ class __get_items_thread(threading.Thread):
             self.result[self.index] = None
 
 #
-# Construct and send GetItems web request
-# returns an array of objects
+# Construct and send a GetItems web request
+# Returns an array of objects
 #
 def ngx_get_items_request_parallel(
         s, base_url, path_in_url, table_name=None, key=None, exp_attrs=None, limit_amount=10,
@@ -161,7 +161,7 @@ def ngx_get_items_request_parallel(
                 request_json[vn]["AttributesToGet"] += ","
             request_json[vn]["AttributesToGet"] += attr_name
 
-    # break when reply shows no more records, or limit reached
+    # Break when the reply shows no more items or the limit is reached
     while not done:
         for vn in range(parallelism):
             if alive[vn]:
@@ -221,7 +221,7 @@ def ngx_get_items_request_parallel(
                 else:
                     alive[vn] = False
         if verbose >= 2:
-            print("Records processed = " + str(records_processed))
+            print("Table-items processed = " + str(records_processed))
 
         if not done:
             done = True
@@ -233,7 +233,7 @@ def ngx_get_items_request_parallel(
     return responses_json
 
 #
-# Construct and send UpdateItem web reuest
+# Construct and send an UpdateItem web request
 #
 def ngx_update_expression_request(
         s, base_url, path_in_url, table_name=None, key=None, mode=None, update_expr=None, text_filter=None,
@@ -259,3 +259,4 @@ def ngx_update_expression_request(
     headers = {V3IO_HEADER_FUNCTION: type}
     res = s.put(url, data=payload, headers=headers)
     return res
+
