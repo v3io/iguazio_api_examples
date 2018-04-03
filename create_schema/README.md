@@ -1,26 +1,50 @@
 # create_schema
 
-Scans records in an existing table, validates consistency of available attributes across multiple records, and create the .#schema file from one of the records.
+- [Overview](#overview)
+- [Notes](#notes)
+- [Change Log](#change-log)
+- [Known Limitations](#known-limitations)
 
-Run ./create_schema --help for full usage
+## Overview
 
-## Change-log
+**create_schema** is a Python command-line interface (CLI) utility for automatic creation of a schema file that describes the structure of a NoSQL table.
+The utility scans items in a given table, identifies the items' attributes (columns), validates attributes consistency across all scanned items, and creates the schema file based on the attributes of one of the scanned items.
+
+Run `./create_schema --help` for full usage instructions.
+
+## Notes
+
+* The utility creates a **.#schema** JSON file in the root directory of the scanned table.
+  This file is used by the [iguazio Continuous Data Platform](https://www.iguazio.com) to support table reads using Spark DataFrames and Presto.
+
+  > **Note:** Do not rename the generated **.#schema** file.
+* The utility scans the configured amount of items (see the `-l | --limit` option) and checks for consistency in the item attributes.
+  The schema is created based on the first scanned item.
+  In the event of an inconsistency in the identified attributes, a warning message is displayed in the output.
+
+
+## Change Log
+
 ### Version 1.1
-* Change multiple command line attributes to improve usability
-* TODO: add version information to command line attributes
 
-### Initial version
-* All features are supported via command line arguments
-* Supports http and https over default and custom ports
-* Supports both authentication and authenticationles operation
-* Supports partitioning by allowing to specify a different path for the output file
-* Supports paralellism of NoSQL requests for optimal performance
-* Supports dry-run - no actual write
+This version supports all features of the previous version, as well as the following improvements:
 
-### Known Limitations:
-* Data type double is written as long in the .#schema file due to inability to distinguish between long and double using GetItems calls
-* Program scans records read (based on limit provided) for consistency of attributes and their types. The output of those checks is still cryptic
-* If records are not consistant (e.g. a non record file is present with no attributes), it may still be used for the record creation
+* Change multiple command-line arguments to improve usability.
+* TODO: add version information to command-line arguments.
 
+### Version 1.0
 
-tsiyons at iguazio.com
+* All features are supported via command-line arguments.
+* Supports HTTP and HTTPS over default and custom ports.
+* Supports operations either with our without user authentication.
+* Supports partitioning by allowing to specify a different path for the output file.
+* Supports multiple parallel of NoSQL requests for optimal performance.
+* Supports dry-run &mdash; the schema file isn't written.
+
+## Known Limitations
+
+* Table-item attributes (columns) of type `double` appear as `long` in the **.#schema** file because it's not possible to distinguish between `long` and `double` using `GetItems` calls.
+  You can manually edit the **.#schema** file in the table's root directory to change the `type` value of relevant attribute objects in the `fields` array from `long` to `double`.
+* The warning message in the event of inconsistent item attributes is currently not sufficiently informative.
+* If non-item files, which do not define any attributes, are present in the scanned directory, they might be used for the creation of the schema file or cause an inconsistent-attributes warning.
+

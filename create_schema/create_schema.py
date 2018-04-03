@@ -6,7 +6,7 @@ import argparse
 import httplib
 
 #
-# Takes the output of a single record from a getItems call and build the content of .#schema
+# Takes the output of a single table item from a GetItems call and builds the content of a JSON .#schema file
 def build_schema_from_item_json_list(attributes_json, verbose = 0):
     TRANSLATE_TYPES = {
         "S": "string",
@@ -24,22 +24,22 @@ def build_schema_from_item_json_list(attributes_json, verbose = 0):
     first_record = True
 
     for attr in attributes_json:
-        try: # unsupported data types will cause an exception
-            # Convert getItems data types to .#schema data types
+        try: # Unsupported data types will cause an exception
+            # Convert GetItems data types to .#schema data types
             attr_type = TRANSLATE_TYPES[next(iter(attributes_json[attr]))]
 
-            # list item separation handling
+            # List item separation handling
             if not first_record:
                 output_json += ","
             else:
                 first_record = False
 
-            # add current attribute to output json
+            # Add current attribute to the output JSON schema file
             output_json = output_json + "{\"name\":\"" + attr + "\",\"type\":\"" + attr_type + "\",\"nullable\":false}"
         except KeyError as e:
             print("Datatype " + str(e) + " not supported, skipping")
 
-    # close output jason, and return
+    # Close the output JSON schema file, and return
     output_json += "]}"
     if verbose >= 1:
         print(".#schema content:")
@@ -48,7 +48,7 @@ def build_schema_from_item_json_list(attributes_json, verbose = 0):
     return(output_json)
 
 #
-# go over all records returned by getItems, and validate they have the same attributes and the same types
+# Iterate the items returned by GetItems and validate that they have the same attributes names and types
 def validate_consistency(response_list, verbosity=0):
     error_found = False
     records_counter = 0
@@ -58,7 +58,7 @@ def validate_consistency(response_list, verbosity=0):
         records_counter += 1
         for attribute in record:
 
-            # no need to validate internal attributes, as all objects should have them
+            # No need to validate internal attributes, as all objects should have them
             if str(attribute).startswith("__"):
                 continue
 
@@ -73,9 +73,9 @@ def validate_consistency(response_list, verbosity=0):
 
         if verbosity >= 2:
             if records_counter % 10000 == 0:
-                print ("validate_consistency: " + str(records_counter) + " records processed")
+                print ("validate_consistency: " + str(records_counter) + " items processed.")
 
-    # check that all fields appear the same number of times
+    # Check that all fields appear the same number of times
     field_counter_value = -1
     for field in field_counters:
         if field_counter_value == -1:
@@ -86,10 +86,10 @@ def validate_consistency(response_list, verbosity=0):
         # else field_counter_value == field_counters.get(field) ==> all is well
 
     if records_counter != field_counter_value:
-        print("inconsistency found on the amount of records, expecting " + str(records_counter) + " got " + str(field_counter_value))
+        print("Inconsistency found in the amount of scanned items - expected " + str(records_counter) + ", got " + str(field_counter_value) + ".")
         error_found = True
 
-    # dump info until error found (until verbosity is fixed)
+    # Dump info until an error is found (until verbosity is fixed)
     if error_found:
         print(field_counters)
         print(type_validator)
@@ -102,22 +102,22 @@ def parse_arguments():
     DEF_HTTPS_PORT = 8443
 
     parser = argparse.ArgumentParser(
-        description="Scans a table, and based on the records found, builds and stores the .#schema file for the table")
+        description="Creates a .#schema file that describes the structure of a NoSQL table by scanning table items")
 
     parser.add_argument("-i", "--ip",
                         type = str,
                         default = "127.0.0.1",
                         required = False,
-                        help = "IP address of the web-gateway service. Default = localhost")
+                        help = "IP address of the web-gateway service. Default = 'localhost'.")
     parser.add_argument("-p", "--port",
                         type = int,
                         default = -1,
                         required = False,
-                        help = "TCP port of the web-gateway. Default = 8081 for http / 8443 for https")
+                        help = "TCP port of the web-gateway service. Default = 8081 for HTTP and 8443 for HTTPS (see the -s|--secure option).")
     parser.add_argument("-c", "--container",
                         type = str,
                         required = True,
-                        help = "Container name or container ID holding the table")
+                        help = "The name of the table's parent container.")
     parser.add_argument("-t", "--table-path",
                         type = str,
                         required = True,
@@ -130,7 +130,7 @@ def parse_arguments():
     parser.add_argument("-s", "--secure",
                         action = "store_true",
                         required = False,
-                        help = "Use HTTPS instead of HTTP (without a certificate verification)")
+                        help = "Use HTTPS (without a certificate verification) instead of HTTP.")
     parser.add_argument("-u", "--user",
                         type = str,
                         required = False,
@@ -142,11 +142,11 @@ def parse_arguments():
     parser.add_argument("-l", "--limit",
                         type = int,
                         default = 10,
-                        help = "The number of table items to scan to determine the schema. A non-positive value means no limit (full table scan). Default = 10")
+                        help = "The number of table items to scan to determine the schema. A non-positive value means no limit (full table scan). Default = 10.")
     parser.add_argument("-g", "--segments",
                         type = int,
                         default = 36,
-                        help = "The number of segments to use in the table items scan. A value higher than 1 configures a parallel multi-segment scan. Default = 36.")
+                        help = "The number of segments to use in the table-items scan. A value higher than 1 configures a parallel multi-segment scan. Default = 36.")
     parser.add_argument("-d", "--dry-run",
                         action = "store_true",
                         required = False,
@@ -154,17 +154,17 @@ def parse_arguments():
     parser.add_argument("-v", "--verbose",
                         action = "count",
                         default = 0,
-                        help = "Increase the verbosity level of the command-line output")
+                        help = "Increase the verbosity level of the command-line output.")
     args = parser.parse_args()
-    # custom parameter handling
-    if args.port == -1: # if port not specified, assign port defaults based on value of "secure"
+    # Custom parameter handling
+    if args.port == -1: # If port isn't specified, assign port defaults based on the value of "secure"
         if args.secure:
             args.port = DEF_HTTPS_PORT
         else:
             args.port = DEF_HTTP_PORT
 
     if (args.user is None and args.password is not None) or (args.user is not None and args.password is None):
-        parser.error("User and password must both be provided if one is provided")
+        parser.error("User and password must both be provided if one is provided.")
 
     return args;
 
@@ -200,17 +200,17 @@ def main():
     response_list = igz_nosql_web.ngx_get_items_request_parallel(s, base_url, path, limit_amount=args.limit, exp_attrs=["*"], parallelism=args.segments, verbose=args.verbose)
 
     if response_list is None:
-        print("Program aborted due to errors")
+        print("Program aborted due to errors.")
         exit(1)
 
     if not response_list: # empty list
-        print("Program could not fine any records in the table")
+        print("Could not find any items in the table. No schema file was created.")
         exit(1)
 
     if validate_consistency(response_list, verbosity=args.verbose):
-        print("Records are consistent")
+        print("The attributes of the scanned table items are consistent")
     else:
-        print("Records are not consistent")
+        print("WARNING: The attributes of the scanned table items are not consistent.")
 
     output_json = build_schema_from_item_json_list(response_list[0], args.verbose)
 
@@ -227,7 +227,8 @@ def main():
     else:
             print("Schema:")
             print(output_json)
-            print("WARNING: Dry run - not writing schema")
+            print("WARNING: Dry run - the schema file will not be written.")
     exit(0)
 
 main()
+
