@@ -43,6 +43,11 @@ This version supports all features of the previous version, as well as the follo
 
 ## Known Limitations
 
+* The schema file supports the following attribute types &mdash; `boolean`, `double`, `long`, `null`, and `string`.
+  Use `double` also for `float`, and use `long` also for `integer` and `short`.
+  The platform converts `float` values to `double` and `short` and `integer` values to `long`.
+  > **Note:** The `null` type matches the Spark DataFrames `NullType` type.
+  > There's no similar type in Presto.
 * Table-item attributes (columns) of type `double` appear as `long` in the **.#schema** file because it's not possible to distinguish between `long` and `double` using `GetItems` calls.
   You can manually edit the **.#schema** file in the table's root directory to change the `type` value of relevant attribute objects in the `fields` array from `long` to `double`.
 * The warning message in the event of inconsistent item attributes is currently not sufficiently informative.
