@@ -2,6 +2,7 @@
 
 - [Overview](#overview)
 - [Notes](#notes)
+- [Usage Examples](#usage-examples)
 - [Change Log](#change-log)
 - [Known Limitations](#known-limitations)
 
@@ -22,6 +23,27 @@ Run `./create_schema --help` for full usage instructions.
   The schema is created based on the first scanned item.
   In the event of an inconsistency in the identified attributes, a warning message is displayed in the output.
 
+## Usage Examples
+
+Following are some examples for executing the **create_schema** application:
+
+1.  Set only the mandatory `--container` and `--table-path` options:
+
+    ```sh
+    ./create_schema --container bigdata --table-path mytable
+    ```
+
+2.  Use the `--ip` and `--port` options to define the IP address and port of the web-gateway service, the `--secure` option to use HTTPS, and the `--limit` option to define the maximum number of table items to scan:
+
+    ```sh
+    ./create_schema --ip 127.0.0.1 --port 8443 --container mycontainer --table-path table1 -secure -limit 1
+    ```
+
+3.  Use the same options as in example #2, and in addition use the `--user` and `--password` options to define login credentials for HTTP authentication:
+
+    ```sh
+    ./create_schema --ip 127.0.0.1 --port 8443 --container mycontainer --table-path mytable -secure -limit 1 --user myuser --password mypass123
+    ```
 
 ## Change Log
 
@@ -49,7 +71,7 @@ This version supports all features of the previous version, as well as the follo
   > **Note:** The `null` type matches the Spark DataFrames `NullType` type.
   > There's no similar type in Presto.
 * Table-item attributes (columns) of type `double` appear as `long` in the **.#schema** file because it's not possible to distinguish between `long` and `double` using `GetItems` calls.
-  You can manually edit the **.#schema** file in the table's root directory to change the `type` value of relevant attribute objects in the `fields` array from `long` to `double`.
+  You can manually edit the **.#schema** file in the table's root directory to change the `type` value of relevant attribute objects in the `fields` array from `"long"` to `"double"`.
 * The warning message in the event of inconsistent item attributes is currently not sufficiently informative.
 * If non-item files, which do not define any attributes, are present in the scanned directory, they might be used for the creation of the schema file or cause an inconsistent-attributes warning.
 
