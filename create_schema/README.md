@@ -27,7 +27,7 @@ Run `./create_schema --help` for full usage instructions.
 
 Following are some examples for executing the **create_schema** application:
 
-1.  Set only the mandatory `--container` and `--table-path` options:
+1.  Set only the mandatory `--container` and `--table-path` options and rely on the default IP address (`127.0.0.1` = `localhost`), which assumes that the web-gateway service is running on the same machine as **create_schema**:
 
     ```sh
     ./create_schema --container bigdata --table-path mytable
@@ -36,13 +36,13 @@ Following are some examples for executing the **create_schema** application:
 2.  Use the `--ip` and `--port` options to define the IP address and port of the web-gateway service, the `--secure` option to use HTTPS, and the `--limit` option to define the maximum number of table items to scan:
 
     ```sh
-    ./create_schema --ip 127.0.0.1 --port 8443 --container mycontainer --table-path table1 -secure -limit 1
+    ./create_schema --ip 192.168.5.123 --port 8445 --container mycontainer --table-path table1 -secure -limit 1
     ```
 
 3.  Use the same options as in example #2, and in addition use the `--user` and `--password` options to define login credentials for HTTP authentication:
 
     ```sh
-    ./create_schema --ip 127.0.0.1 --port 8443 --container mycontainer --table-path mytable -secure -limit 1 --user myuser --password mypass123
+    ./create_schema --ip 192.168.5.123 --port 8445 --container mycontainer --table-path mytable -secure -limit 1 --user myuser --password mypass123
     ```
 
 ## Change Log
