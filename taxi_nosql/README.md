@@ -19,6 +19,3 @@ Both the files need to be ingested simaltaneously
 ```
 ./load_driver_data.sh & ./load_passenger_data.sh &
 ```
-
-#3 Point the UI to the Web API end-points
-<<To be completed>>
