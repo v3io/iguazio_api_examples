@@ -9,7 +9,6 @@ import (
 	"github.com/nuclio/nuclio-sdk-go"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
-	"github.com/yaronha/goframe"
 )
 
 type driverEvent struct {
@@ -21,22 +20,37 @@ type driverEvent struct {
 }
 
 func DriverEvent(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
-	reader := csv.NewReader(bytes.NewReader(event.GetBody()))
-	dEvent := driverEvent{}
-	if err := csvhelper.UnmarshalFieldsByIndex(reader, &dEvent, 0, 1, 2, 3, 4); err != nil {
+    container := context.DataBinding["my_iguazio"].(*v3io.Container)
+
+    reader := csv.NewReader(bytes.NewReader(event.GetBody()))
+    dEvent := driverEvent{}
+    if err := csvhelper.UnmarshalFieldsByIndex(reader, &dEvent, 0, 1, 2, 3, 4); err != nil {
 		return nil, errors.Wrap(err, "Unable to unmarshal event")
 	}
-	cont := context.DataBinding["db1"].(*v3io.Container)
 
-	driverId := strconv.FormatInt(dEvent.DriverID, 10)
-	timestamp := dEvent.Timestamp
-	latitude := dEvent.Latitude
-	longitude:= dEvent.Longitude
-	status := dEvent.Status
+    driverId := strconv.FormatInt(dEvent.DriverID, 10)
+    timestamp := dEvent.Timestamp
+    latitude := dEvent.Latitude
+    longitude:= dEvent.Longitude
+    status := dEvent.Status
 
-	df := dataframe.NewDataContext(context.Logger)
-	df.Write.ToTable(cont, "/taxi_streaming_example/drivers_table_nuclio/").Keys(driverId).Expression(
-		"timestamp='" + timestamp + "';lat='" + latitude + "';long='" + longitude + "';status='" + status + "';").Save()
+    path := "/taxi_streaming_example/drivers_table_nuclio/driver_"+driverId
+   
+    PutItemAttributes := make (map[string]interface{})
+    PutItemAttributes ["timestamp"]=timestamp
+    PutItemAttributes ["lat"]=latitude
+    PutItemAttributes ["long"]=longitude
+    PutItemAttributes ["status"]=status
+    
+    PutItemerr := container.Sync.PutItem(&v3io.PutItemInput{
+            Path: string(path),
+            Attributes: PutItemAttributes})
 
-	return strconv.FormatInt(dEvent.DriverID, 10), nil
+    if PutItemerr != nil {
+            context.Logger.ErrorWith("Put Item *err*", "err", PutItemerr)}
+
+    return nuclio.Response{
+        StatusCode:  200,
+        ContentType: "application/json",
+        Body:        []byte(strconv.FormatInt(dEvent.DriverID, 10))},nil
 }
