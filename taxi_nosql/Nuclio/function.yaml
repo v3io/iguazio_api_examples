@@ -1,0 +1,27 @@
+metadata:
+  name: driverkv
+  labels: {}
+  annotations: {}
+spec:
+  description: ""
+  disable: false
+  timeoutSeconds: 0
+  triggers:
+    ingest:
+      kind: http
+      attributes:
+        port: 31223
+        ingresses: {}
+      maxWorkers: 1
+  env: []
+  handler: “driverkv:DriverEvent"
+  runtime: golang
+  build:
+  targetCPU: 75
+  minReplicas: 1
+  maxReplicas: 1
+  dataBindings:
+    my_iguazio:
+      kind: v3io
+      url: "http:127.0.0.1:8081/1"
+      secret: No
