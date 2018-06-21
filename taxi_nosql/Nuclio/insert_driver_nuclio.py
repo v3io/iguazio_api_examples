@@ -5,11 +5,10 @@ import csv
 import time
 
 #------------
-BASE_URL = 'http://10.90.1.171:31223'
-INPUT_FILE = '/home/iguazio/iguazio_api_examples/taxi_streaming/drivers_data.csv'
+BASE_URL = 'http://127.0.0.1:31223'
 
 # read CSV
-#INPUT_FILE = str(sys.argv[1])
+INPUT_FILE = str(sys.argv[1])
 
 start = time.time()
 counter = 0
@@ -24,7 +23,7 @@ with open(INPUT_FILE) as csvfile:
         time_stamp = row[1]
         lat = row[2]
         long = row[3]
-        status = row[3]
+        status = row[4]
         body = driver_id + ',' + time_stamp + ',' + lat + ',' + long + ',' + status
         #print(body)
 
