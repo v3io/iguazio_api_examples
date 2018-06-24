@@ -14,9 +14,9 @@ nuctl create project --display-name taxi_example --namespace nuclio taxi_example
 
 5. Deploy functions
 
-nuctl deploy --path /xxx/taxi_nuclio/ingest 
+nuctl deploy --path /xxx/taxi_nuclio/ingest.py -f /xxx/taxi_nuclio/ingest.yaml
 
-nuctl deploy --path /xxx/taxi_nuclio/generate_data
+nuctl deploy --path /xxx/taxi_nuclio/generate_data.py -f /xxx/taxi_nuclio/generate_data.yaml
 
 
 
