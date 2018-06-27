@@ -1,3 +1,4 @@
-# igz_api_examples
+# Iguazio Continuous Data Platform API Examples
 
-This repository contains code examples describing the usage of iguazio API
+The **iguazio_api_examples** repository contains code examples that demonstrate how to use the APIs of the [Iguazio Continuous Data Platform](https://www.iguazio.com).
+
