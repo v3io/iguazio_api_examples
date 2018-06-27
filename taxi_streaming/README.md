@@ -16,7 +16,7 @@ In this document
 
 ### Use-Case Story
 
-The [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) example demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a ride-hailing company that provides services in the city of London and its surroundings.
+The [**taxi_streaming**](../taxi_streaming) example demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a ride-hailing company that provides services in the city of London and its surroundings.
 An application in the company's cars sends to the platform the cars' current GPS coordinates and the IDs of the drivers.
 In addition, the drivers report their current ride status (available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
@@ -55,7 +55,7 @@ The sample demonstrates the following platform capabilities and API uses:
 To run the sample, you must first copy the sample's code files to an instance of the platform.
 You can select to clone the [v3io/iguazio_api_examples](https://github.com/v3io/iguazio_api_examples) GitHub repository directly to any of the platform's application nodes.
 The sample files are found in the **taxi_streaming** subdirectory of your clone directory.
-Alternatively, you can clone the GitHub repository or download the [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/blob/master/taxi_streaming) sample directory from the repository's `master` branch to a local machine, and copy the sample directory to the platform.
+Alternatively, you can clone the GitHub repository or download the [**taxi_streaming**](../taxi_streaming) sample directory to a local machine, and copy the sample directory to the platform.
 (Note that when copying files from a Windows machine to the platform, you need to convert the files to a Unix format, which you can do using `dos2unix`.)
 
 ### Running the Code
