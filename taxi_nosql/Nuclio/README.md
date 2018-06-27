@@ -1,12 +1,13 @@
-# nuclio example
+# Nuclio Example
 
-A nuclio GO function
-  
-  Accepting a driver event
-  
-  Writing the event to a KV table using the data frame like API
+A Nuclio GO function that
 
-The function should be deployed to nuclio instance
+- Accepts a driver event.
+- Writes the event to a NoSQL ("KV") table using the DataFrame-like API.
 
-The Python script will push driver's events through the Nuclio function
-    The BASE_URL should be edited according to the Nuclio function IP and port
+The function should be deployed to a Nuclio instance.
+
+The Python script will push driver events through the Nuclio function.
+
+The `BASE_URL` should be edited according to the Nuclio function IP and port.
+
