@@ -1,3 +1,4 @@
 # GO HTTP API Examples
 
-Examples for all KV and streaming API calls using the GO HTTP wrapper
+Here you can find examples for all NoSQL ("KV") and streaming API calls using the GO HTTP wrapper.
+
