@@ -1,5 +1,6 @@
-# Archive CSV files to Parquet
+# Archive CSV Files to Parquet
 
-Python example of converting CSV file to Parquet
+This is a Python example of converting CSV file to Parquet.
 
-Example of spark-submit command is embedded as remark at the bottom
+An example of a `spark-submit` command is embedded as remark at the bottom.
+

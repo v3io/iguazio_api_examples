@@ -1,38 +1,47 @@
 # iguazio-api-java-examples
-this repository contains example spark java programs to integrate various Iguazio API's
-All the below drivers can run in parallel to simulate a end to end flow of consumpting data from Kafka , ingesting it in KV or stream and reading from KV/Stream in real time.
 
-kafka stream producer driver
---------------------------------
+This repository contains example Spark Java programs to integrate various Iguazio Continuous Data Platform APIs.
+All of the following drivers can run in parallel to simulate an end-to-end flow of consuming data from Kafka, ingesting as NoSQL ("KV") or stream data, and reading from NoSQL ("KV") table or from the stream in real time.
+
+## Kafka Stream-Producer Driver
+
+```sh
 spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar --class com.iguazio.drivers.KafkaStreamProducerDriver data-ingestor-0.0.1-SNAPSHOT.jar
+```
 
+The **KafkaStreamProducerDriver** program will produce a random Kafka stream in the "cars" Kafka stream (topic), in the following comma separated string format:
+`(driverid,timestamp,longitude,latitude,status)`
 
-KafkaStreamProducerDriver program will produce a random kafka stream in cars topic in the following comma separated string format
-(driverid,timestamp,longitude,latitude,status)
+## Kafka to Iguazio Stream
 
-kafka to iguazio stream
---------------------------------
+```sh
 spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar,/home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-streaming.jar  --class com.iguazio.drivers.KafkaToIguazioStreamIngestionDriver data-ingestor-0.0.1-SNAPSHOT.jar
+```
 
-KafkaToIguazioStreamIngestionDriver program can be used to consume from kafka "cars" topic and it writes to "cars-stream" stream inside iguazio unified data platform in append mode.
+The **KafkaToIguazioStreamIngestionDriver** program can be used to consume records from the "cars" Kafka stream (topic) and write it to a "cars-stream" stream in the Iguazio Continuous Data Platform, in append mode.
 
 
-iguazio stream consumer
---------------------------------
+## Iguazio Stream Consumer
+
+```sh
 spark-submit --jars /home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-streaming.jar  --class com.iguazio.drivers.IguazioStreamConsumerDriver data-ingestor-0.0.1-SNAPSHOT.jar
+```
 
-IguazioStreamConsumerDriver program can be used to consume from  stream topic "cars-stream" inside iguazio unified data platform.
+The **IguazioStreamConsumerDriver** program can be used to consume records from the "cars-stream" stream in the Iguazio Continuous Data Platform.
 
-kafka to kv
---------------------------------
+## Kafka to NoSQL ("KV")
+
+```sh
 spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar,/home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-object-dataframe.jar   --class com.iguazio.drivers.KafkaToKvIngestionDriver data-ingestor-0.0.1-SNAPSHOT.jar
+```
 
-KafkaToKvIngestionDriver program is used to consume from kafka "cars" topic and it writes to iguazio kv "cars-test-kv"
+The **KafkaToKvIngestionDriver** program is used to consume records from the "cars" Kafka stream (topic) and write the data to the "cars-test-kv" Iguazio Continuous Data Platform NoSQL ("KV") table.
 
+##  Iguazio NoSQL ("KV") Reader
 
-iguazio kv reader
------------------------
+```sh
 spark-submit --jars spark-streaming-kafka-0-10-assembly_2.11-2.2.0.jar,/home/iguazio/hadoop/share/hadoop/hdfs/lib/v3io-hcfs.jar,/home/iguazio/spark2/lib/v3io-spark-object-dataframe.jar   --class com.iguazio.drivers.IguazioKvReaderDriver data-ingestor-0.0.1-SNAPSHOT.jar
+```
 
-IguazioKvReaderDriver program can be used to read from iguazio kv.
+The **IguazioKvReaderDriver** program can be used to read from the Iguazio NoSQL ("KV") data store.
 
