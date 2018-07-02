@@ -3,7 +3,6 @@ metadata:
   name: ingest
   labels:
     nuclio.io/project-name: taxi_example
-  namespace: nuclio
   
 spec:
   handler: "ingest:handler"
@@ -11,10 +10,14 @@ spec:
   env:
     - name: WEBAPI_URL
       value: "http://127.0.0.1:8081"
+    - name: CONTAINER_NAME
+      Value : /bigdata
     - name: DRIVERS_TABLE
-      value: /1/taxi_example/drivers/
+      value: /taxi_example/drivers/
+    - name: PASSENGERS_TABLE
+      value: /taxi_example/passengers/
     - name: CELLS_TABLE
-      value: /1/taxi_example/cells/
+      value: /taxi_example/cells/
   resources: {}
   minReplicas: 1
   maxReplicas: 1

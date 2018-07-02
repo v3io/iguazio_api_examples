@@ -2,7 +2,7 @@ metadata:
   name: generate_data
   labels:
     nuclio.io/project-name: taxi_example
-  namespace : nuclio 
+
 spec:
   handler: "generate_data:handler"
   runtime: "python:3.6"
