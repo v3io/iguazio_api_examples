@@ -26,8 +26,8 @@ def handler(context, event):
     s = requests.Session()
     request_json = {}
 
-    # generate random location for 1000 drivers and send for ingestion
-    for x in range (1,1000):
+    # generate random location for drivers and send for ingestion
+    for x in range (1,100):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
         rnd_radius =randint (0,8)
@@ -52,8 +52,8 @@ def handler(context, event):
         #context.logger.info(request_json)
         #context.logger.info(res)
 
-   # generate random location for 500 passengers and send for ingestion
-    for x in range (1,500):
+   # generate random location for passengers and send for ingestion
+    for x in range (1,100):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
         rnd_radius =randint (0,8)
