@@ -343,13 +343,13 @@ The `archive` stream-data consumption function, which is executed for each strea
 ## Cleanup
 
 After running the sample and testing the output, you can delete any of the runtime byproducts &mdash; such as stream and NoSQL tables in the container sample directory, or the **drivers_data.csv** file in the local application-node sample directory &mdash; as you would any other file or directory in the platform.
-For example, if the stream and NoSQL tables were saved to a **taxi_streaming_example** directory in the default "bigdata" container, and the platform's DFS mount directory is **/mnt/datalake**, you can use the following command to delete the **taxi_streaming_example** directory and its contents:
+For example, if the stream and NoSQL tables were saved to a **taxi_streaming_example** directory in the default "bigdata" container, you can use the following command to delete the **taxi_streaming_example** directory and its contents:
 ```sh
-rm -rf /mnt/datalake/bigdata/taxi_streaming_example/
+hadoop fs -rmdir v3io//bigdata/taxi_streaming_example/
 ```
-Files in the container directory can also be deleted from the platform dashboard:
-select the container from the main **Data** screen, select the **Browse** tab, and use the **Delete** action-toolbar option to delete the selected files or directories.
+You can also select to delete the container directory from the dashboard:
+in the **Data > bigdata** page, select the **Browse** tab, select the directories that you want to delete, and then select the delete icon from the action toolbar.
 
-To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot use the `rm -rf` command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
+To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot run the file-system remove command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
 This script deletes the **taxi_streaming_example/drivers_stream** stream directory by using the `curl` CLI to issue recursive `XDELETE` commands.
 
