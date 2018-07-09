@@ -4,11 +4,14 @@ import csv
 import time
 import s2sphere
 import igz_nosql_web
+import os
 
-BASE_URL = 'http://127.0.0.1:8081'
 
-DRIVERS_PATH_IN_URL = '/1/taxi_example/drivers/'
-CELLS_PATH_IN_URL   = '/1/taxi_example/cells/'
+WEBAPI_URL = os.getenv ("WEBAPI_URL")
+CONTAINER_NANE = os.getenv ("CONTAINER_NAME")
+
+DRIVERS_TABLE_PATH = CONTAINER_NANE + os.getenv ("DRIVERS_TABLE")
+CELLS_TABLE_PATH   = CONTAINER_NANE + os.getenv ("CELLS_TABLE")
 
 # read CSV
 INPUT_FILE = str(sys.argv[1])
@@ -18,8 +21,10 @@ counter = 0
 s = requests.Session()
 with open(INPUT_FILE) as csvfile:
     readCSV = csv.reader(csvfile, delimiter=',')
+    
     # Skip the header
     next(readCSV, None)
+    
     # Go over the rows and get the driver id and cell id
     for row in readCSV:
         #print(row)
@@ -35,20 +40,16 @@ with open(INPUT_FILE) as csvfile:
         #print (cell_id)
 
         # update driver current and previous location 
-        res = igz_nosql_web.ngx_update_expression_request(s,BASE_URL, DRIVERS_PATH_IN_URL + "driver_" + driver_id, None, None,
-                                            "CreateOrReplaceAttributes",
-                                            "previous_cell_id=current_cell_id;current_cell_id=" + cell_id + ";change_cell_id_indicator=(previous_cell_id != current_cell_id);",
-                                            "exists(current_cell_id)")
-	
-        # if driver does not exist, add driver
-	if res.status_code == requests.codes.bad_request:
-            igz_nosql_web.ngx_update_expression_request(s,BASE_URL, DRIVERS_PATH_IN_URL + "driver_" + driver_id, None, None,
-                                          "CreateOrReplaceAttributes",
-                                          "current_cell_id=" + cell_id + ";previous_cell_id=0;change_cell_id_indicator=(1==1);",
-                                          "(1==1)")
+        res = igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, DRIVERS_TABLE_PATH + "driver_" + driver_id, None, None,
+                                            None,
+                                            "SET previous_cell_id=if_not_exists(current_cell_id,0);current_cell_id=" + cell_id + ";change_cell_id_indicator=(previous_cell_id != current_cell_id);",
+                                            None)
+        if res.status_code not in (200,204):
+                print ("Error during update of drivers table. Error code is "+str(res.status_code))
 
-        # Get current and previous cell for driver 
-        response_json = igz_nosql_web.ngx_get_item_request(s,BASE_URL, DRIVERS_PATH_IN_URL+"driver_"+driver_id,None,None,exp_attrs=["change_cell_id_indicator","current_cell_id","previous_cell_id"])
+	# Get current and previous cell for driver 
+        response_json = igz_nosql_web.ngx_get_item_request(s,WEBAPI_URL, DRIVERS_TABLE_PATH+"driver_"+driver_id,None,None,exp_attrs=["change_cell_id_indicator","current_cell_id","previous_cell_id"])
+
 
         # Check if a cell update is needed
         attrs = response_json["Item"]
@@ -58,23 +59,25 @@ with open(INPUT_FILE) as csvfile:
         #for key, value in attrs.items():
         #     print("attr: {}, value: {}".format(key, value["N"]))
 
-        # Try to increase the count on the cell the driver moved to
+        # Increase the count on the cell the driver moved to
         if change_cell_id_indicator_val:
-            res=igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_"+ current_cell_id_val, None, None,
-                                          "CreateOrReplaceAttributes",
-                                          "count=count+1;",
-                                          "exists(count)")
-            # If the cell doesn't exists create a new one
-            if res.status_code == requests.codes.bad_request:
-                igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_" + current_cell_id_val, None, None,
-                                              "CreateOrReplaceAttributes",
-                                              "count=1;",
-                                              None)
-            # Decrease the count on the cell the driver moved from
-            igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_" + previous_cell_id_val, None, None,
-                                          "CreateOrReplaceAttributes",
-                                          "count=count-1;;",
+            res=igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, CELLS_TABLE_PATH + "cell_"+ current_cell_id_val, None, None,
+                                          None,
+                                          "SET driver_count=if_not_exists(driver_count,0)+1;",
                                           None)
+
+            if res.status_code not in (200,204):
+                print ("Error during increment of count in cells table. Error code is "+str(res.status_code))
+
+            # Decrease the count on the cell the driver moved from
+            res = igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, CELLS_TABLE_PATH + "cell_" + previous_cell_id_val, None, None,
+                                          None,
+                                          "driver_count=drievr_count-1;;",
+                                          None)
+
+            if res.status_code not in (200,204):
+                print ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
+
         counter = counter + 1
         if counter % 1000 == 0:
             end = time.time()

@@ -4,11 +4,15 @@ import csv
 import time
 import s2sphere
 import igz_nosql_web
+import os
 
-BASE_URL = 'http://127.0.0.1:8081'
 
-PASSENGERS_PATH_IN_URL = '/1/taxi_example/passengers/'
-CELLS_PATH_IN_URL   = '/1/taxi_example/cells/'
+WEBAPI_URL = os.getenv ("WEBAPI_URL")
+CONTAINER_NANE = os.getenv ("CONTAINER_NAME")
+
+PASSENGERS_TABLE_PATH = CONTAINER_NANE + os.getenv ("PASSENGERS_TABLE")
+CELLS_TABLE_PATH   = CONTAINER_NANE + os.getenv ("CELLS_TABLE")
+
 
 # read CSV
 INPUT_FILE = str(sys.argv[1])
@@ -36,20 +40,17 @@ with open(INPUT_FILE) as csvfile:
         #print (cell_id)
 
         # update passenger current and previous location 
-        res = igz_nosql_web.ngx_update_expression_request(s,BASE_URL, PASSENGERS_PATH_IN_URL + "passenger_" + passenger_id, None, None,
-                                            "CreateOrReplaceAttributes",
-                                            "previous_cell_id=current_cell_id;current_cell_id=" + cell_id + ";change_cell_id_indicator=(previous_cell_id != current_cell_id);",
-                                            "exists(current_cell_id)")
-        # if passsenger does not exist, add passenger 
-	#print (res)
-	if res.status_code == requests.codes.bad_request:
-            igz_nosql_web.ngx_update_expression_request(s,BASE_URL, PASSENGERS_PATH_IN_URL + "passenger_" + passenger_id, None, None,
-                                          "CreateOrReplaceAttributes",
-                                          "current_cell_id=" + cell_id + ";previous_cell_id=0;change_cell_id_indicator=(1==1);",
-                                          "(1==1)")
+        res = igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, PASSENGERS_TABLE_PATH + "passenger_" + passenger_id, None, None,
+                                            None,
+                                            "SET previous_cell_id=if_not_exists(current_cell_id,0);current_cell_id=" + cell_id + ";change_cell_id_indicator=(previous_cell_id != current_cell_id);",
+                                            None)
 
-        # Get current and previous cell for passenger 
-        response_json = igz_nosql_web.ngx_get_item_request(s,BASE_URL, PASSENGERS_PATH_IN_URL +"passenger_"+passenger_id,None,None,exp_attrs=["change_cell_id_indicator","current_cell_id","previous_cell_id"])
+
+        if res.status_code not in (200,204):
+                print ("Error during update of passengers table. Error code is "+str(res.status_code))
+
+	# Get current and previous cell for passenger 
+        response_json = igz_nosql_web.ngx_get_item_request(s,WEBAPI_URL, PASSENGERS_TABLE_PATH + "passenger_"+passenger_id,None,None,exp_attrs=["change_cell_id_indicator","current_cell_id","previous_cell_id"])
 
         # Check if a cell update is needed
         attrs = response_json["Item"]
@@ -61,21 +62,24 @@ with open(INPUT_FILE) as csvfile:
 
         # Try to increase the count on the cell the driver moved to
         if change_cell_id_indicator_val:
-            res=igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_"+ current_cell_id_val, None, None,
-                                          "CreateOrReplaceAttributes",
-                                          "pass_count=pass_count+1;",
-                                          "exists(pass_count)")
-            # If the cell doesn't exists create a new one
-            if res.status_code == requests.codes.bad_request:
-                igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_" + current_cell_id_val, None, None,
-                                              "CreateOrReplaceAttributes",
-                                              "pass_count=1;",
-                                              None)
-            # Decrease the count on the cell the driver moved from
-            igz_nosql_web.ngx_update_expression_request(s,BASE_URL, CELLS_PATH_IN_URL + "cell_" + previous_cell_id_val, None, None,
-                                         "CreateOrReplaceAttributes",
-                                         "pass_count=pass_count-1;;",
-                                         None)
+           
+            res = igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, CELLS_TABLE_PATH + "cell_"+ current_cell_id_val, None, None,
+                                          None,
+                                          "SET passenger_count=if_not_exists(passenger_count,0)+1;",
+                                          None)
+            
+            if res.status_code not in (200,204):
+                print ("Error during increment of count in cells table. Error code is "+str(res.status_code))
+
+	    # Decrease the count on the cell the driver moved from
+            res = igz_nosql_web.ngx_update_expression_request(s,WEBAPI_URL, CELLS_TABLE_PATH + "cell_" + previous_cell_id_val, None, None,
+                                          None,
+                                          "passenger_count=passenger_count-1;;",
+                                          None)
+
+            if res.status_code not in (200,204):
+                print ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
+
         counter = counter + 1
         if counter % 1000 == 0:
             end = time.time()
