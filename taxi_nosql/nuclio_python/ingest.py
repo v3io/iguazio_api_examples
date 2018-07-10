@@ -16,7 +16,7 @@ DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
 PASSENGERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('PASSENGERS_TABLE'))
 CELLS_TABLE_PATH   = CONTAINER_NAME + str(os.getenv('CELLS_TABLE'))
 
-DRIVER_PREFIX = 'drivers_'
+DRIVER_PREFIX =F 'drivers_'
 PASSENGER_PREFIX = 'passengers_'
 
 V3IO_HEADER_FUNCTION = 'X-v3io-function'
@@ -156,7 +156,7 @@ def ngx_update_expression_request(
         request_json["ConditionExpression"] = text_filter
 
     payload = json.dumps(request_json)
-    headers = {V3IO_HEADER_FUNCTION: 'GetItem',"Authorization": WEBAPI_CRED}
+    headers = {V3IO_HEADER_FUNCTION: 'UpdateItem',"Authorization": WEBAPI_CRED}
  
     # send the request
     res = s.put(url, data=payload, headers=headers)
