@@ -9,6 +9,7 @@ CONTAINER_NAME = str(os.getenv('CONTAINER_NAME'))
 
 WEBAPI_USER = str(os.getenv('WEBAPI_USER'))
 WEBAPI_PASSWORD = str(os.getenv('WEBAPI_PASSWORD'))
+WEBAPI_CRED = str(os.getenv('WEBAPI_CRED'))
 
 # Get table locations from environment variables defined using Nuclio
 DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
@@ -116,8 +117,9 @@ def ngx_get_item_request(
         request_json["AttributesToGet"] += attr_name
 
     payload = json.dumps(request_json)
-    headers = {V3IO_HEADER_FUNCTION: 'GetItem'}
-
+    
+    headers = {V3IO_HEADER_FUNCTION: 'GetItem',"Authorization": WEBAPI_CRED}
+    
     # send the request
     res = s.put(url, data=payload, headers=headers)
 
@@ -154,7 +156,7 @@ def ngx_update_expression_request(
         request_json["ConditionExpression"] = text_filter
 
     payload = json.dumps(request_json)
-    headers = {V3IO_HEADER_FUNCTION: type}
+    headers = {V3IO_HEADER_FUNCTION: 'GetItem',"Authorization": WEBAPI_CRED}
  
     # send the request
     res = s.put(url, data=payload, headers=headers)
