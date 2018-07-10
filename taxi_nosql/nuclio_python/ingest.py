@@ -156,7 +156,7 @@ def ngx_update_expression_request(
         request_json["ConditionExpression"] = text_filter
 
     payload = json.dumps(request_json)
-    headers = {V3IO_HEADER_FUNCTION: 'UpdateItem',"Authorization": WEBAPI_CRED}
+    headers = {V3IO_HEADER_FUNCTION: type ,"Authorization": WEBAPI_CRED}
  
     # send the request
     res = s.put(url, data=payload, headers=headers)
