@@ -12,6 +12,10 @@ spec:
       value: "http://127.0.0.1:8081"
     - name: CONTAINER_NAME
       Value : /bigdata
+    - name: WEBAPI_USER
+      value: "iguazio"
+    - name: WEBAPI_PASSWOD
+      value: "password"
     - name: DRIVERS_TABLE
       value: /taxi_example/drivers/
     - name: PASSENGERS_TABLE
