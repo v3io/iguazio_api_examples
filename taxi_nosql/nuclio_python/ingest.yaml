@@ -16,6 +16,8 @@ spec:
       value: "iguazio"
     - name: WEBAPI_PASSWOD
       value: "password"
+    - name: WEBAPI_CRED
+      value: "cred"
     - name: DRIVERS_TABLE
       value: /taxi_example/drivers/
     - name: PASSENGERS_TABLE
