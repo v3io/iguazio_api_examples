@@ -7,6 +7,9 @@ import s2sphere
 WEBAPI_URL     = str(os.getenv('WEBAPI_URL'))
 CONTAINER_NAME = str(os.getenv('CONTAINER_NAME'))
 
+WEBAPI_USER = str(os.getenv('WEBAPI_USER'))
+WEBAPI_PASSWORD = str(os.getenv('WEBAPI_PASSWORD'))
+
 # Get table locations from environment variables defined using Nuclio
 DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
 PASSENGERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('PASSENGERS_TABLE'))
@@ -38,6 +41,10 @@ def handler(context, event):
     # Create a session for sending NoSQL Webapi requests
     s = requests.Session()
 
+    # Provide webapi user/pass
+    if WEBAPI_USER is not None and WEBAPI_PASSWORD is not None:
+        s.auth = (WEBAPI_USER, WEBAPI_PASSWORD)
+    
     # Ingestion of both drivers and passengers are supported
     # Depening on record type, releavant tables will be updated
     if record_type == 'driver':
