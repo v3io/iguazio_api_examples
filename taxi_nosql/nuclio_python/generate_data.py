@@ -26,8 +26,8 @@ def handler(context, event):
     s = requests.Session()
     request_json = {}
 
-    # generate random location for drivers and send for ingestion
-    for x in range (1,100):
+    # generate random location for 1000 drivers and send for ingestion
+    for x in range (1,1000):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
         rnd_radius =randint (0,8)
@@ -48,12 +48,16 @@ def handler(context, event):
 
         # send request to ingest functiom
         res = s.put(INGEST_URL, data=payload)
+        if res.status_code != requests.codes.ok:
+            context.logger.error("Ingestion of drivers failed with error code :"+str(res.status_code))
+            return context.Response(body='Ingestion of driver failed',
+                            headers={},
+                            content_type='text/plain',
+                            status_code=500)
         
-        #context.logger.info(request_json)
-        #context.logger.info(res)
 
-   # generate random location for passengers and send for ingestion
-    for x in range (1,100):
+   # generate random location for 500 passengers and send for ingestion
+    for x in range (1,500):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
         rnd_radius =randint (0,8)
@@ -75,9 +79,12 @@ def handler(context, event):
         # send request to ingest functiom
         res = s.put(INGEST_URL, data=payload)
         
-        
-        #context.logger.info(request_json)
-        #context.logger.info(res)
+        if res.status_code != requests.codes.ok:
+            context.logger.error("Ingestion of passengers failed with error code :"+str(res.status_code))
+            return context.Response(body='Ingestion of passengers failed',
+                            headers={},
+                            content_type='text/plain',
+                            status_code=500)
 
     context.logger.info('End - Generating Data')
 
