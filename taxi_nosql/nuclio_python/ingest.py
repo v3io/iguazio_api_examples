@@ -7,16 +7,16 @@ import s2sphere
 WEBAPI_URL     = str(os.getenv('WEBAPI_URL'))
 CONTAINER_NAME = str(os.getenv('CONTAINER_NAME'))
 
-WEBAPI_USER = str(os.getenv('WEBAPI_USER'))
-WEBAPI_PASSWORD = str(os.getenv('WEBAPI_PASSWORD'))
-WEBAPI_CRED = str(os.getenv('WEBAPI_CRED'))
+WEBAPI_USER = os.getenv('WEBAPI_USER')
+WEBAPI_PASSWORD = os.getenv('WEBAPI_PASSWORD')
+WEBAPI_CRED = os.getenv('WEBAPI_CRED')
 
 # Get table locations from environment variables defined using Nuclio
 DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
 PASSENGERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('PASSENGERS_TABLE'))
 CELLS_TABLE_PATH   = CONTAINER_NAME + str(os.getenv('CELLS_TABLE'))
 
-DRIVER_PREFIX =F 'drivers_'
+DRIVER_PREFIX = 'drivers_'
 PASSENGER_PREFIX = 'passengers_'
 
 V3IO_HEADER_FUNCTION = 'X-v3io-function'
@@ -43,8 +43,8 @@ def handler(context, event):
     s = requests.Session()
 
     # Provide webapi user/pass
-    if WEBAPI_USER is not None and WEBAPI_PASSWORD is not None:
-        s.auth = (WEBAPI_USER, WEBAPI_PASSWORD)
+    if WEBAPI_USER is not None:
+        s.auth = (str(WEBAPI_USER), str(WEBAPI_PASSWORD))
     
     # Ingestion of both drivers and passengers are supported
     # Depening on record type, releavant tables will be updated
@@ -61,7 +61,9 @@ def handler(context, event):
                                             "SET previous_cell_id=if_not_exists(current_cell_id,0);current_cell_id=" + cell_id + ";change_cell_id_indicator=(previous_cell_id != current_cell_id);",
                                             None)
 
-    # context.logger.info(res)
+    if res.status_code not in (200,204):
+            context.logger.error ("Error during update of drivers table. Error code is "+str(res.status_code))
+            return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
     
     # Get current and previous cell for driver 
     response_json = ngx_get_item_request(s,WEBAPI_URL, ITEM_PATH + ITEM_PREFIX +id,None,None,exp_attrs=["change_cell_id_indicator","current_cell_id","previous_cell_id"])
@@ -80,14 +82,19 @@ def handler(context, event):
                                           "SET "+ITEM_PREFIX+"count=if_not_exists("+ITEM_PREFIX+"count,0)+1;",
                                           None)
 
-            # context.logger.info(res)
+            if res.status_code not in (200,204):
+                context.logger.error ("Error during increment of count in cells table. Error code is "+str(res.status_code))
+                return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
+
 
             # Decrease the count on the previous cell
             res = ngx_update_expression_request(s,WEBAPI_URL, CELLS_TABLE_PATH + "cell_" + previous_cell_id_val, None, None,None,
                                           "SET "+ITEM_PREFIX+"count="+ITEM_PREFIX+"count-1;",
                                           None)
 
-            # context.logger.info(res)
+            if res.status_code not in (200,204):
+                context.logger.error ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
+                return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
 
     return context.Response(body='Ingestion completed successfully',
                             headers={},
@@ -118,7 +125,11 @@ def ngx_get_item_request(
 
     payload = json.dumps(request_json)
     
-    headers = {V3IO_HEADER_FUNCTION: 'GetItem',"Authorization": WEBAPI_CRED}
+    if WEBAPI_CRED is None:
+        headers = {V3IO_HEADER_FUNCTION: 'GetItem'}
+    else:
+        headers = {V3IO_HEADER_FUNCTION: 'GetItem',"Authorization": str(WEBAPI_CRED)}
+    
     
     # send the request
     res = s.put(url, data=payload, headers=headers)
@@ -156,8 +167,13 @@ def ngx_update_expression_request(
         request_json["ConditionExpression"] = text_filter
 
     payload = json.dumps(request_json)
-    headers = {V3IO_HEADER_FUNCTION: type ,"Authorization": WEBAPI_CRED}
- 
+    
+    if WEBAPI_CRED is None:
+       headers = {V3IO_HEADER_FUNCTION: type }
+    else:
+       headers = {V3IO_HEADER_FUNCTION: type ,"Authorization": str(WEBAPI_CRED)}
+
+
     # send the request
     res = s.put(url, data=payload, headers=headers)
     #assert res.status_code == expected_result
