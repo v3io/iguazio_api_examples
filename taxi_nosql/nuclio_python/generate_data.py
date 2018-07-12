@@ -6,10 +6,12 @@ from random import *
 
 def handler(context, event):
 
-    # Get IP and Port of the ingestion function from environment variables defined using Nuclio
+    # Get the IP and port of the ingestion function from environment variables
+    # defined using Nuclio
     INGEST_URL = os.getenv ("INGEST_URL")
     
-    # List of random locations - feel free to replace the list with your favourite locations
+    # List of GPS coordinates for randomly selected locations
+    # TODO: Modify the list, as needed, to use your preferred locations.
     Downtown_London = [-0.1195,51.5033]
     Westminster = [-0.1357,51.4975]
     Oxford_St = [-0.1410,51.5154]
@@ -26,7 +28,8 @@ def handler(context, event):
     s = requests.Session()
     request_json = {}
 
-    # generate random location for 1000 drivers and send for ingestion
+    # Generate random driver locations for 1000 drivers and send the data for
+    # ingestion
     for x in range (1,1000):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
@@ -38,7 +41,7 @@ def handler(context, event):
         
         #context.logger.info('driver id - '+ str(rnd_driver))
 
-        # Build request json
+        # Build a JSON request body
         request_json["RecordType"] = "driver"
         request_json["ID"] = rnd_driver
         request_json["longitude"] = str (longitude)
@@ -46,7 +49,7 @@ def handler(context, event):
         
         payload = json.dumps(request_json)
 
-        # send request to ingest functiom
+        # Send a request to the ingestion function
         res = s.put(INGEST_URL, data=payload)
         if res.status_code != requests.codes.ok:
             context.logger.error("Ingestion of drivers failed with error code :"+str(res.status_code))
@@ -56,7 +59,7 @@ def handler(context, event):
                             status_code=500)
         
 
-   # generate random location for 500 passengers and send for ingestion
+   # Generate random location for 1,500 passengers and send for ingestion
     for x in range (1,500):
         rnd_driver = randint (1,5000)
         rnd_location = randint (0,9)
@@ -68,7 +71,7 @@ def handler(context, event):
         
         #context.logger.info('passenger id - '+ str(rnd_driver))
 
-        # Build request json
+        # Build a JSON request body
         request_json["RecordType"] = "passenger"
         request_json["ID"] = rnd_driver
         request_json["longitude"] = str (longitude)
@@ -76,7 +79,7 @@ def handler(context, event):
         
         payload = json.dumps(request_json)
 
-        # send request to ingest functiom
+        # Send a request to the ingestion function
         res = s.put(INGEST_URL, data=payload)
         
         if res.status_code != requests.codes.ok:
@@ -92,5 +95,4 @@ def handler(context, event):
                             headers={},
                             content_type='text/plain',
                             status_code=200)
-
 
