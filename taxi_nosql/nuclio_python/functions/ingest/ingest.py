@@ -95,9 +95,9 @@ def handler(context, event):
                                           "SET "+ITEM_PREFIX+"count="+ITEM_PREFIX+"count-1;",
                                           None)
 
-            if res.status_code not in (200,204):
-                context.logger.error ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
-                return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
+            # if res.status_code not in (200,204):
+            #     context.logger.error ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
+            #     return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
 
     return context.Response(body='Ingestion completed successfully',
                             headers={},
@@ -109,7 +109,7 @@ def handler(context, event):
 #
 def ngx_get_item_request(
         s,base_url, path_in_url, table_name=None, key=None, exp_attrs=None, expected_result=requests.codes.ok):
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     # Build a JSON request body
     request_json = {}
@@ -147,7 +147,7 @@ def ngx_get_item_request(
 def ngx_update_expression_request(
         s,base_url, path_in_url, table_name=None, key=None, mode=None, update_expr=None, text_filter=None, type="UpdateItem",
         expected_result=requests.codes.no_content):
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     # Build a JSON request body
     request_json = {}
