@@ -106,7 +106,7 @@ def handler(context, event):
 #
 def ngx_get_item_request(
         s,base_url, path_in_url, table_name=None, key=None, exp_attrs=None, expected_result=requests.codes.ok):
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     #
     # Construct the json     
@@ -147,7 +147,7 @@ def ngx_get_item_request(
 def ngx_update_expression_request(
         s,base_url, path_in_url, table_name=None, key=None, mode=None, update_expr=None, text_filter=None, type="UpdateItem",
         expected_result=requests.codes.no_content):
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     #
     # Construct the json     
