@@ -92,9 +92,9 @@ def handler(context, event):
                                           "SET "+ITEM_PREFIX+"count="+ITEM_PREFIX+"count-1;",
                                           None)
 
-            if res.status_code not in (200,204):
-                context.logger.error ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
-                return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
+            # if res.status_code not in (200,204):
+            #     context.logger.error ("Error during decrement of count in cells table. Error code is "+str(res.status_code))
+            #     return context.Response(body='Internal error during ingestion',content_type='text/plain',status_code=500)
 
     return context.Response(body='Ingestion completed successfully',
                             headers={},
