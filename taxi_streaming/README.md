@@ -345,7 +345,7 @@ The `archive` stream-data consumption function, which is executed for each strea
 After running the sample and testing the output, you can delete any of the runtime byproducts &mdash; such as stream and NoSQL tables in the container sample directory, or the **drivers_data.csv** file in the local application-node sample directory &mdash; as you would any other file or directory in the platform.
 For example, if the stream and NoSQL tables were saved to a **taxi_streaming_example** directory in the default "bigdata" container, you can use the following command to delete the **taxi_streaming_example** directory and its contents:
 ```sh
-hadoop fs -rmdir v3io//bigdata/taxi_streaming_example/
+hadoop fs -rm -r v3io//bigdata/taxi_streaming_example/
 ```
 You can also select to delete the container directory from the dashboard:
 in the **Data > bigdata** page, select the **Browse** tab, select the directories that you want to delete, and then select the delete icon from the action toolbar.
