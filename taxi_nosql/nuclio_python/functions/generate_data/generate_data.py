@@ -1,98 +1,99 @@
 import requests
 import os
 import json
+import random
 from decimal import *
-from random import *
+
+# List of GPS coordinates for randomly selected locations
+all_locations = {
+    'downtown_london': {'long': -0.1195, 'lat': 51.5033},
+    'westminster': {'long': -0.1357, 'lat': 51.4975},
+    'oxford_St': {'long': -0.1410, 'lat': 51.5154},
+    'heathrow': {'long': -0.4543, 'lat': 51.4700},
+    'heathrow_parking': {'long': -0.4473, 'lat': 51.4599},
+    'gatwick': {'long': 0.1821, 'lat': 51.1537},
+    'canary_wharf': {'long': -0.0235, 'lat': 51.5054}
+}
+
+# Most drivers are in downtown - provide more weight to downtown - note this is just an example
+drivers_weighted_locations = {'downtown_london':4, 'westminster':3}
+
+# Most passengers are in airports - provide more weight to downtown - note this is just an example
+passengers_weighted_locations = {'heathrow':4, 'heathrow_parking':3, 'gatwick':4}
+
+# Get IP and Port of the ingestion function from Nuclio environment variables
+ingest_url = os.getenv("INGEST_URL")
+
+# Number of drivers and passengers to ingest
+num_drivers_to_ingest = 1000
+num_passengers_to_ingest = 500
+
+# Max ID for drivers and passengers, defines the total number in the system
+max_driver_id = 5000
+max_passenger_id = 5000
+
 
 def handler(context, event):
 
-    # Get the IP and port of the ingestion function from environment variables
-    # defined using Nuclio
-    INGEST_URL = os.getenv ("INGEST_URL")
-    
-    # List of GPS coordinates for randomly selected locations
-    # TODO: Modify the list, as needed, to use your preferred locations.
-    Downtown_London = [-0.1195,51.5033]
-    Westminster = [-0.1357,51.4975]
-    Oxford_St = [-0.1410,51.5154]
-    Heathrow = [-0.4543,51.4700]
-    Heathrow_Parking = [-0.4473,51.4599]
-    Gatwick =  [0.1821,51.1537]
-    Canary_Wharf = [-0.0235,51.5054]
-    Locations = [Canary_Wharf,Canary_Wharf,Downtown_London,Westminster,Oxford_St,Oxford_St,Oxford_St,Heathrow,Heathrow_Parking,Gatwick]
+    # ingest drivers
+    _ingest_locations(context, ingest_url, num_drivers_to_ingest, max_driver_id, 'driver', drivers_weighted_locations)
 
-    # Get IP and Port of the ingestion function from environment variables defined using Nuclio
-    INGEST_URL = os.getenv ("INGEST_URL")
+    # ingest passengers
+    _ingest_locations(context, ingest_url, num_drivers_to_ingest, max_passenger_id, 'passenger', passengers_weighted_locations)
 
-    # Create a session for sending requests for ingestion
-    s = requests.Session()
-    request_json = {}
+    return context.Response(status_code=204)
 
-    # Generate random driver locations for 1000 drivers and send the data for
-    # ingestion
-    for x in range (1,1000):
-        rnd_driver = randint (1,5000)
-        rnd_location = randint (0,9)
-        rnd_radius =randint (0,8)
-        rnd_long = randint (-rnd_radius,rnd_radius)
-        rnd_lat  = randint (-rnd_radius,rnd_radius)
-        longitude =  Decimal (Locations[rnd_location][0]) + (Decimal (rnd_long) / Decimal (300))
-        latitude = Decimal (Locations[rnd_location][1])  + (Decimal (rnd_lat) / Decimal (300))
-        
-        #context.logger.info('driver id - '+ str(rnd_driver))
 
-        # Build a JSON request body
-        request_json["RecordType"] = "driver"
-        request_json["ID"] = rnd_driver
-        request_json["longitude"] = str (longitude)
-        request_json["latitude"] = str (latitude)
-        
-        payload = json.dumps(request_json)
+def _ingest_locations(context, ingest_url, num_records, max_record_id, record_type, weighted_locations):
 
-        # Send a request to the ingestion function
-        res = s.put(INGEST_URL, data=payload)
-        if res.status_code != requests.codes.ok:
-            context.logger.error("Ingestion of drivers failed with error code :"+str(res.status_code))
-            return context.Response(body='Ingestion of driver failed',
-                            headers={},
-                            content_type='text/plain',
-                            status_code=500)
-        
+    # generate random location for 1000 drivers and send for ingestion
+    for x in range(1, num_records):
 
-   # Generate random location for 1,500 passengers and send for ingestion
-    for x in range (1,500):
-        rnd_driver = randint (1,5000)
-        rnd_location = randint (0,9)
-        rnd_radius =randint (0,8)
-        rnd_long = randint (-rnd_radius,rnd_radius)
-        rnd_lat  = randint (-rnd_radius,rnd_radius)
-        longitude =  Decimal (Locations[rnd_location][0]) + (Decimal (rnd_long) / Decimal (300))
-        latitude = Decimal (Locations[rnd_location][1])  + (Decimal (rnd_lat) / Decimal (300))
-        
-        #context.logger.info('passenger id - '+ str(rnd_driver))
+        # get a random locations
+        random_location = _get_random_location(_weighted_keys (all_locations,weighted_locations))
 
-        # Build a JSON request body
-        request_json["RecordType"] = "passenger"
-        request_json["ID"] = rnd_driver
-        request_json["longitude"] = str (longitude)
-        request_json["latitude"] = str (latitude)
-        
-        payload = json.dumps(request_json)
+        request = {
+                  'RecordType': record_type,
+                  'ID': random.randint(1, max_record_id),
+                  'Longitude': _get_random_offset(all_locations[random_location]['long']),
+                  'Latitude': _get_random_offset (all_locations[random_location]['lat'])
+        }
 
-        # Send a request to the ingestion function
-        res = s.put(INGEST_URL, data=payload)
-        
-        if res.status_code != requests.codes.ok:
-            context.logger.error("Ingestion of passengers failed with error code :"+str(res.status_code))
-            return context.Response(body='Ingestion of passengers failed',
-                            headers={},
-                            content_type='text/plain',
-                            status_code=500)
+        response = requests.put(ingest_url, data=json.dumps(request))
 
-    context.logger.info('End - Generating Data')
+        if response.status_code != requests.codes.ok:
+            message = f'Ingestion of drivers failed with error code {response.status_code}'
+            context.logger.error(message)
+            return context.Response(body={'error': message}, status_code=500)
 
-    return context.Response(body='Ingestion of drivers and passengers completed successfully',
-                            headers={},
-                            content_type='text/plain',
-                            status_code=200)
 
+# get a random location from the available locations
+def _get_random_location(locations):
+
+    random_location_name = random.choice(locations)
+
+    return random_location_name
+
+
+# move to a close offset of the exact point - for demo purposes only
+def _get_random_offset(location):
+
+    rnd_radius = random.randint(0, 8)
+
+    rnd_offset = random.randint (-rnd_radius,rnd_radius)
+
+    new_location = Decimal(location) + (Decimal(rnd_offset) / Decimal(300))
+
+    return str(new_location)
+
+# given dict "d", returns the keys weighted by weight "weights"
+# For example: 
+#  input: d = {'a': 1, 'b': 2, 'c': 3}, weights = {'b': 3, 'c': 2}
+#  output: ['a', 'b', 'b', 'b', 'c', 'c']
+def _weighted_keys(d, weights):
+  result = []
+  
+  for key in d.keys():
+    result.extend([key] * weights.get(key, 1))
+
+  return result
