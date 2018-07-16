@@ -32,8 +32,8 @@ def handler(context, event):
 
     id = str(input_data ["ID"])
     
-    longitude = float (input_data["longitude"])
-    latitude = float (input_data["latitude"])
+    longitude = float (input_data["Longitude"])
+    latitude = float (input_data["Latitude"])
 
     # Use the Google s2sphere library to calculate a cell from the longitude
     # and latitude degrees
