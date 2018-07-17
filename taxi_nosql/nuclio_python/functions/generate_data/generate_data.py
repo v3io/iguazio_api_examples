@@ -39,7 +39,7 @@ def handler(context, event):
     _ingest_locations(context, ingest_url, num_drivers_to_ingest, max_driver_id, 'driver', drivers_weighted_locations)
 
     # ingest passengers
-    _ingest_locations(context, ingest_url, num_drivers_to_ingest, max_passenger_id, 'passenger', passengers_weighted_locations)
+    _ingest_locations(context, ingest_url, num_passengers_to_ingest, max_passenger_id, 'passenger', passengers_weighted_locations)
 
     return context.Response(status_code=204)
 
