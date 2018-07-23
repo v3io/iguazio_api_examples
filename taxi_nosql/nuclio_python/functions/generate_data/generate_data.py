@@ -8,7 +8,7 @@ from decimal import *
 all_locations = {
     'downtown_london': {'long': -0.1195, 'lat': 51.5033},
     'westminster': {'long': -0.1357, 'lat': 51.4975},
-    'oxford_St': {'long': -0.1410, 'lat': 51.5154},
+    'oxford_st': {'long': -0.1410, 'lat': 51.5154},
     'heathrow': {'long': -0.4543, 'lat': 51.4700},
     'heathrow_parking': {'long': -0.4473, 'lat': 51.4599},
     'gatwick': {'long': 0.1821, 'lat': 51.1537},
