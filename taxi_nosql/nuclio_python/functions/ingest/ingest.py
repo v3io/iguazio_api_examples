@@ -22,7 +22,7 @@ V3IO_HEADER_FUNCTION = 'X-v3io-function'
 
 #
 # Ingest data into driver/passenger and cells tables
-# 
+#
 def handler(context, event):
 
     # Generate the input data based on input from event.body
@@ -31,18 +31,28 @@ def handler(context, event):
     # Update driver/passenger current and previous location
     res = _webapi_updateitem(WEBAPI_URL,
                              id,
-                             f'SET previous_cell_id=if_not_exists(current_cell_id,0);current_cell_id={cell_id};change_cell_id_indicator=(previous_cell_id != current_cell_id);')
-    context.logger.error(f'Error during update of {WEBAPI_URL}{id}. Error code is {res.status_code}')
+                             f'''SET previous_cell_id =
+                                if_not_exists(current_cell_id, 0);
+                                current_cell_id = {cell_id};
+                                change_cell_id_indicator =
+                                    (previous_cell_id != current_cell_id);''')
+    context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
+        Error code is {res.status_code}''')
 
     if res.status_code != requests.codes.no_content:
-            context.logger.error(f'Error during update of {WEBAPI_URL}{id}. Error code is {res.status_code}')
-            return context.Response(body='Internal error during ingestion', content_type='text/plain', status_code=500)
+            context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
+                Error code is {res.status_code}''')
+            return context.Response(body='Internal error during ingestion',
+                                    content_type='text/plain', status_code=500)
 
-    # Update cells table according to driver/passenger current and previous location
+    # Update the cells table based on the driver's or passenger's current and
+    # previous locations
     res = _update_cells_table(context, id, item_prefix)
     if res.status_code != requests.codes.no_content:
-            context.logger.error(f'Error during update of cells table. Error code is {res.status_code}')
-            return context.Response(body='Internal error during ingestion', content_type='text/plain', status_code=500)
+        context.logger.error(f'''Error during update of cells table.
+            Error code is {res.status_code}''')
+        return context.Response(body='Internal error during ingestion',
+                                content_type='text/plain', status_code=500)
 
     # return 200 - completed successfuly
     return context.Response(status_code=200)
@@ -84,12 +94,16 @@ def _generate_data_from_input(input_data_json):
 
 #
 # If Cell(location) was changed, update cells table based on new location
-# Increase the count on the new cell, decrease the count on the old cell if needed
+# Increase the new-cell count and decrease the old-cell count, if needed
 #
 def _update_cells_table(context, id, item_prefix):
 
     # Get current and previous cell for driver
-    response_json = _webapi_getitem(WEBAPI_URL, id, exp_attrs=["change_cell_id_indicator", "current_cell_id", "previous_cell_id"])
+    response_json = _webapi_getitem(
+        WEBAPI_URL, id,
+        exp_attrs=["change_cell_id_indicator",
+                   "current_cell_id",
+                   "previous_cell_id"])
 
     # Check if a cell update is needed
     attrs = response_json["Item"]
@@ -97,29 +111,38 @@ def _update_cells_table(context, id, item_prefix):
     current_cell_id_val = attrs["current_cell_id"]["N"]
     previous_cell_id_val = attrs["previous_cell_id"]["N"]
 
-    # if cell was changed, increase the count on the new cell and descrease from the old cell
+    # If the driver's or passenger's cell has changed, increase the new-cell
+    # drivers/passengers count and decrease the equivalent old-cell count
     if change_cell_id_indicator_val:
 
             count_attribute = item_prefix+'count'
 
             # Increase the count on the currnet cell
-            res = _webapi_updateitem(WEBAPI_URL,
-                                     CELLS_TABLE_PATH + "cell_" + current_cell_id_val,
-                                     f'SET {count_attribute}=if_not_exists({count_attribute},0)+1;')
+            res = _webapi_updateitem(
+                WEBAPI_URL,
+                CELLS_TABLE_PATH + "cell_" + current_cell_id_val,
+                f'SET {count_attribute}=if_not_exists({count_attribute},0)+1;')
 
             if res.status_code != requests.codes.no_content:
-                context.logger.error(f'Error during increment of count in cells table. Error code is {res.status_code}')
-                return context.Response(body='Internal error during ingestion', content_type='text/plain', status_code=500)
+                context.logger.error(f'''Error during increment of count in
+                    cells table. Error code is {res.status_code}''')
+                return context.Response(body='Internal error during ingestion',
+                                        content_type='text/plain',
+                                        status_code=500)
 
             # Decrease the count on the previous cell
             if int(previous_cell_id_val) > 0:
-                res = _webapi_updateitem(WEBAPI_URL,
-                                         CELLS_TABLE_PATH + "cell_" + previous_cell_id_val,
-                                         f'SET {count_attribute}={count_attribute}-1;')
+                res = _webapi_updateitem(
+                    WEBAPI_URL,
+                    CELLS_TABLE_PATH + "cell_" + previous_cell_id_val,
+                    f'SET {count_attribute}={count_attribute}-1;')
 
             if res.status_code != requests.codes.no_content:
-                    context.logger.error(f'Error during decrement of count in cells table. Error code is {res.status_code}')
-                    return context.Response(body='Internal error during ingestion', content_type='text/plain', status_code=500)
+                    context.logger.error(f'''Error during decrement of count in
+                        cells table. Error code is {res.status_code}''')
+                    return context.Response(body='Internal ingestion error',
+                                            content_type='text/plain',
+                                            status_code=500)
 
     return context.Response(status_code=requests.codes.no_content)
 
@@ -184,3 +207,4 @@ def _webapi_updateitem(base_url, path_in_url, update_expr):
     # send the request
     res = requests.put(url, data=payload, headers=headers)
     return res
+
