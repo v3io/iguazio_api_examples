@@ -22,7 +22,7 @@ drivers_weighted_locations = {'downtown_london': 4, 'westminster': 3}
 # Most passengers are in airports - provide more weight to airports.
 # Note that this is just an example.
 passengers_weighted_locations = \
-        {'heathrow': 4, 'heathrow_parking': 3, 'gatwick': 4}
+    {'heathrow': 4, 'heathrow_parking': 3, 'gatwick': 4}
 
 # Get IP and Port of the ingestion function from Nuclio environment variables
 ingest_url = os.getenv("INGEST_URL")
