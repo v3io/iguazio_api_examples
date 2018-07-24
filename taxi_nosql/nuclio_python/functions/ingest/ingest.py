@@ -150,9 +150,8 @@ def _update_cells_table(context, item_path, item_prefix):
                                         content_type='text/plain',
                                         status_code=500)
 
-            # Decrease the driver/passenger count for the previous cell:
-            # subtract one from the current value of the cells-table
-            # driver/passenger count attribute (column)
+            # Decrease the driver/passenger count for the previous cell: if the
+            # previous count is greater than zero, subtract one from this count
             if int(previous_cell_id_val) > 0:
                 res = _webapi_updateitem(
                     WEBAPI_URL,
