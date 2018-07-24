@@ -6,10 +6,10 @@ import s2sphere
 # Get configuration information from Nuclio function environment variables
 # Web-APIs (web-gateway service) URL
 WEBAPI_URL = str(os.getenv('WEBAPI_URL'))
-# Container name - for storing the ingested data
-CONTAINER_NAME = str(os.getenv('CONTAINER_NAME'))
 # Base64 encoded web-APIs user credentials for HTTP authentication
 WEBAPI_CRED = os.getenv('WEBAPI_CRED')
+# Container name - for storing the ingested data
+CONTAINER_NAME = str(os.getenv('CONTAINER_NAME'))
 # Table paths
 DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
 PASSENGERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('PASSENGERS_TABLE'))
