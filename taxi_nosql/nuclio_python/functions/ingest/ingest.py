@@ -171,7 +171,7 @@ def _update_cells_table(context, id, item_prefix):
 def _webapi_getitem(base_url, path_in_url, exp_attrs):
 
     # Set the request URL
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     # Construct the request's JSON body
     request_json = {}
@@ -209,7 +209,7 @@ def _webapi_getitem(base_url, path_in_url, exp_attrs):
 def _webapi_updateitem(base_url, path_in_url, update_expr):
 
     # Set the request URL
-    url = base_url + path_in_url
+    url = os.path.join(base_url, path_in_url)
 
     # Construct the request's JSON body
     request_json = {}
@@ -231,4 +231,6 @@ def _webapi_updateitem(base_url, path_in_url, update_expr):
     # Send the request
     res = requests.put(url, data=payload, headers=headers)
     return res
+
+
 
