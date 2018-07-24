@@ -81,7 +81,7 @@ def _generate_data_from_input(input_data_json):
     longitude = float(input_data["Longitude"])
     latitude = float(input_data["Latitude"])
 
-    # Use the s2Sphere library to calculate the Google S2 cell for the
+    # Use the s2Sphere library to determine the Google S2 cell for the
     # longitude and latitude GPS coordinates and retrieve the cell ID
     p1 = s2sphere.LatLng.from_degrees(latitude, longitude)
     cell = s2sphere.CellId.from_lat_lng(p1).parent(15)
