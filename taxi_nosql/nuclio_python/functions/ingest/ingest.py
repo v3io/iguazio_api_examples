@@ -232,5 +232,3 @@ def _webapi_updateitem(base_url, path_in_url, update_expr):
     res = requests.put(url, data=payload, headers=headers)
     return res
 
-
-
