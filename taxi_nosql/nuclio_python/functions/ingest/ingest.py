@@ -34,9 +34,10 @@ def handler(context, event):
     # attribute-name prefix for the record type (driver/passenger)
     id, cell_id, item_prefix = _generate_data_from_input(event.body)
 
-    # Update the current and previous driver/passenger location information:
-    # - For a new driver/passenger ID, create a new item (row) in the
-    #   drivers/passengers table.
+    # Update the current and previous driver/passenger location information;
+    # if the item doesn't already exist in the table, it will be created:
+    # - Set the previous_cell_id attribute (column) to value of the
+    #   current_cell_id attribute or to zero for a new driver or passenger ID.
     # - Set the current_cell_id attribute (column) to the driver's/passenger's
     #   current cell ID.
     # - Set the change_cell_id_indicator attribute (column) to a Boolean value
