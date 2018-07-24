@@ -28,7 +28,7 @@ V3IO_HEADER_FUNCTION = 'X-v3io-function'
 # ingest it into drivers/passengers and cells tables
 def handler(context, event):
 
-    # Generate the input data - driver/passenger ID, current-location cell ID,
+    # Generate ingestion data - driver/passenger ID, current-location cell ID,
     # and the attribute-name prefix for the record type (driver/passenger) -
     # from the input received in the event body
     id, cell_id, item_prefix = _generate_data_from_input(event.body)
