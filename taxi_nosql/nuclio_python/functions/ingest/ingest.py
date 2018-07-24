@@ -117,7 +117,6 @@ def _update_cells_table(context, item_path, item_prefix):
                    "current_cell_id",
                    "previous_cell_id"])
 
-    # Check whether a cell update is needed:
     # Extract the values of the cell-change indicator and current and previous
     # cell ID attributes from the retrieved driver/passenger table item
     attrs = response_json["Item"]
@@ -125,8 +124,9 @@ def _update_cells_table(context, item_path, item_prefix):
     current_cell_id_val = attrs["current_cell_id"]["N"]
     previous_cell_id_val = attrs["previous_cell_id"]["N"]
 
-    # If the driver's or passenger's cell has changed (as indicated by the
-    # value of the change_cell_id_indicator attribute), increase the new-cell
+    # Check whether a cell update is needed: if the driver's or passenger's
+    # cell has changed (as indicated by the value of the
+    # change_cell_id_indicator attribute), increase the new-cell
     # drivers/passengers count and decrease the equivalent old-cell count
     if change_cell_id_indicator_val:
 
