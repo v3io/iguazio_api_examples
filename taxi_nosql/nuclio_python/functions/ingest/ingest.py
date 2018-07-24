@@ -36,7 +36,7 @@ def handler(context, event):
 
     # Update the current and previous driver/passenger location information;
     # if the item doesn't already exist in the table, it will be created:
-    # - Set the previous_cell_id attribute (column) to value of the
+    # - Set the previous_cell_id attribute (column) to the value of the
     #   current_cell_id attribute or to zero for a new driver or passenger ID.
     # - Set the current_cell_id attribute (column) to the driver's/passenger's
     #   current cell ID.
