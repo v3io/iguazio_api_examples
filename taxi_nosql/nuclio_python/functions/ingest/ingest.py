@@ -28,11 +28,10 @@ V3IO_HEADER_FUNCTION = 'X-v3io-function'
 # ingest it into drivers/passengers and cells tables
 def handler(context, event):
 
-    # Generate ingestion data from the input received in the event body -
-    # the driver/passenger table-item path (based on an ID primary-key
-    # attribute), the driver's/passenger's current-location cell ID, and the
+    # Generate ingestion data from the input received in the event body - the
+    # driver/passenger table-item path, their current-location cell ID, and the
     # attribute-name prefix for the record type (driver/passenger)
-    id, cell_id, item_prefix = _generate_data_from_input(event.body)
+    item_path, cell_id, item_prefix = _generate_data_from_input(event.body)
 
     # Update the current and previous driver/passenger location information;
     # if the item doesn't already exist in the table, it will be created:
@@ -44,21 +43,21 @@ def handler(context, event):
     #   that indicates whether the driver's/passenger's cell has changed.
     res = _webapi_updateitem(
         WEBAPI_URL,
-        id,
+        item_path,
         f'''SET previous_cell_id = if_not_exists(current_cell_id, 0);
             current_cell_id = {cell_id};
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
         ''')
 
     if res.status_code != requests.codes.no_content:
-            context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
+            context.logger.error(f'''Error during update of {WEBAPI_URL}{item_path}.
                 Error code is {res.status_code}''')
             return context.Response(body='Internal error during ingestion',
                                     content_type='text/plain', status_code=500)
 
     # Update the cells table based on the driver's or passenger's current and
     # previous locations
-    res = _update_cells_table(context, id, item_prefix)
+    res = _update_cells_table(context, item_path, item_prefix)
     if res.status_code != requests.codes.no_content:
         context.logger.error(f'''Error during update of cells table.
             Error code is {res.status_code}''')
@@ -98,22 +97,22 @@ def _generate_data_from_input(input_data_json):
         table_path = PASSENGERS_TABLE_PATH
 
     # Set the path to the ingested driver/passenger table item (row)
-    id = table_path + item_prefix + input_id
+    item_path = table_path + item_prefix + input_id
 
     # Return the generated data - path to the driver/passenger table item, the
     # ID of the cell in which the driver/passenger is currently located, and
     # the attribute-name prefix for the record type (driver/passenger)
-    return id, cell_id, item_prefix
+    return item_path, cell_id, item_prefix
 
 
 # Update the cells table: if a driver's/passenger's location cell has changed,
 # update the driver/passenger count of the previous and new cell in the table
-def _update_cells_table(context, id, item_prefix):
+def _update_cells_table(context, item_path, item_prefix):
 
     # Get the driver's/passenger's Boolean cell-change indicator and current
     # and previous cell locations
     response_json = _webapi_getitem(
-        WEBAPI_URL, id,
+        WEBAPI_URL, item_path,
         exp_attrs=["change_cell_id_indicator",
                    "current_cell_id",
                    "previous_cell_id"])
