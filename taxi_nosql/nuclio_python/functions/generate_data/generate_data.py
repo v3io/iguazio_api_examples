@@ -4,6 +4,9 @@ import json
 import random
 from decimal import *
 
+# Get the ingestion-function URL from the Nuclio function environment variables
+INGEST_URL = os.getenv("INGEST_URL")
+
 # List of GPS coordinates for randomly selected locations
 locations = {
     'downtown_london': {'long': -0.1195, 'lat': 51.5033},
@@ -24,9 +27,6 @@ drivers_weighted_locations = {'downtown_london': 4, 'westminster': 3}
 passengers_weighted_locations = \
     {'heathrow': 4, 'heathrow_parking': 3, 'gatwick': 4}
 
-# Get the ingestion-function URL from the Nuclio function environment variables
-ingest_url = os.getenv("INGEST_URL")
-
 # Set the number of drivers and passengers to ingest
 num_drivers_to_ingest = 1000
 num_passengers_to_ingest = 500
@@ -41,20 +41,19 @@ max_passenger_id = 5000
 def handler(context, event):
 
     # Ingest current driver locations
-    _ingest_locations(context, ingest_url, num_drivers_to_ingest,
-                      max_driver_id, 'driver', drivers_weighted_locations)
+    _ingest_locations(context, num_drivers_to_ingest, max_driver_id, 'driver',
+                      drivers_weighted_locations)
 
     # Ingest current passenger locations
-    _ingest_locations(context, ingest_url, num_passengers_to_ingest,
-                      max_passenger_id, 'passenger',
-                      passengers_weighted_locations)
+    _ingest_locations(context, num_passengers_to_ingest, max_passenger_id,
+                      'passenger', passengers_weighted_locations)
 
     return context.Response(status_code=204)
 
 
 # Ingest driver and passenger locations information
-def _ingest_locations(context, ingest_url, num_records, max_record_id,
-                      record_type, weighted_locations):
+def _ingest_locations(context, num_records, max_record_id, record_type,
+                      weighted_locations):
 
     # Get random driver/passenger locations and send the data for ingestion
     for x in range(1, num_records):
@@ -78,10 +77,10 @@ def _ingest_locations(context, ingest_url, num_records, max_record_id,
 
         # Ingest the location data by sending a PUT Object web-API request to
         # the configured ingestion URL
-        response = requests.put(ingest_url, data=json.dumps(request))
+        response = requests.put(INGEST_URL, data=json.dumps(request))
 
         if response.status_code != requests.codes.ok:
-            message = f'''Ingestion of drivers failed with error code
+            message = f'''Ingestion of {record_type}s failed with error code
                {response.status_code}'''
             context.logger.error(message)
             return context.Response(body={'error': message}, status_code=500)
@@ -116,4 +115,3 @@ def _weighted_keys(d, weights):
         result.extend([key] * weights.get(key, 1))
 
     return result
-
