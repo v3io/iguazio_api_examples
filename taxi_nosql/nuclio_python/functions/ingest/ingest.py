@@ -46,8 +46,6 @@ def handler(context, event):
             current_cell_id = {cell_id};
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
         ''')
-    context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
-        Error code is {res.status_code}''')
 
     if res.status_code != requests.codes.no_content:
             context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
