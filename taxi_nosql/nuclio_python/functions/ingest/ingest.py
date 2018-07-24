@@ -20,6 +20,7 @@ CELLS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('CELLS_TABLE'))
 DRIVER_PREFIX = 'drivers_'
 PASSENGER_PREFIX = 'passengers_'
 
+# Web-API header for defining the operation (function) to execute
 V3IO_HEADER_FUNCTION = 'X-v3io-function'
 
 
