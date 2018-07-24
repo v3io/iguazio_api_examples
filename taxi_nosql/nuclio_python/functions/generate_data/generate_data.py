@@ -63,7 +63,7 @@ def _ingest_locations(context, ingest_url, num_records, max_record_id,
         random_location = _get_random_location(_weighted_keys(locations,
                                                weighted_locations))
 
-        # Build a JSON request body with the record type (driver/passenger),
+        # Create a JSON request body with the record type (driver/passenger),
         # the respective ID, and the GPS coordinates of the current driver or
         # passenger location. For demo purposes, the location coordinates are
         # generated as a random offset of the current random weighted location.
