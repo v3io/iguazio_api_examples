@@ -92,13 +92,13 @@ def _generate_data_from_input(input_data_json):
     # table based on the record type - driver or passenger
     if record_type == 'driver':
         item_prefix = DRIVER_PREFIX
-        item_path = DRIVERS_TABLE_PATH
+        table_path = DRIVERS_TABLE_PATH
     else:
         item_prefix = PASSENGER_PREFIX
-        item_path = PASSENGERS_TABLE_PATH
+        table_path = PASSENGERS_TABLE_PATH
 
     # Set the path to the ingested driver/passenger table item (row)
-    id = item_path + item_prefix + input_id
+    id = table_path + item_prefix + input_id
 
     # Return the generated data - path to the driver/passenger table item, the
     # ID of the cell in which the driver/passenger is currently located, and
