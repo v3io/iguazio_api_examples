@@ -75,8 +75,8 @@ def _ingest_locations(context, num_records, max_record_id, record_type,
             'Latitude': _get_random_offset(locations[random_location]['lat'])
         }
 
-        # Ingest the location data by sending a PUT Object web-API request to
-        # the configured ingestion URL
+        # Ingest the location data by sending an HTTP request to the configured
+        # ingestion URL
         response = requests.put(INGEST_URL, data=json.dumps(request))
 
         if response.status_code != requests.codes.ok:
