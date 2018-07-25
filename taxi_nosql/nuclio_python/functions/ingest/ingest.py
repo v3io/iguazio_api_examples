@@ -20,6 +20,7 @@ CELLS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('CELLS_TABLE'))
 DRIVER_PREFIX = 'drivers_'
 PASSENGER_PREFIX = 'passengers_'
 
+# Web-API header for defining the operation (function) to execute
 V3IO_HEADER_FUNCTION = 'X-v3io-function'
 
 
@@ -27,35 +28,36 @@ V3IO_HEADER_FUNCTION = 'X-v3io-function'
 # ingest it into drivers/passengers and cells tables
 def handler(context, event):
 
-    # Generate the input data - driver/passenger ID, current-location cell ID,
-    # and the attribute-name prefix for the record type (driver/passenger) -
-    # from the input received in the event body
-    id, cell_id, item_prefix = _generate_data_from_input(event.body)
+    # Generate ingestion data from the input received in the event body - the
+    # driver/passenger table-item path, their current-location cell ID, and the
+    # attribute-name prefix for the record type (driver/passenger)
+    item_path, cell_id, item_prefix = _generate_data_from_input(event.body)
 
-    # Update the current and previous driver/passenger location information:
-    # - For a new driver/passenger ID, create a new item (row) in the
-    #   drivers/passengers table.
+    # Update the current and previous driver/passenger location information;
+    # if the item doesn't already exist in the table, it will be created:
+    # - Set the previous_cell_id attribute (column) to the value of the
+    #   current_cell_id attribute or to zero for a new driver or passenger ID.
     # - Set the current_cell_id attribute (column) to the driver's/passenger's
     #   current cell ID.
     # - Set the change_cell_id_indicator attribute (column) to a Boolean value
     #   that indicates whether the driver's/passenger's cell has changed.
     res = _webapi_updateitem(
         WEBAPI_URL,
-        id,
+        item_path,
         f'''SET previous_cell_id = if_not_exists(current_cell_id, 0);
             current_cell_id = {cell_id};
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
         ''')
 
     if res.status_code != requests.codes.no_content:
-            context.logger.error(f'''Error during update of {WEBAPI_URL}{id}.
+            context.logger.error(f'''Error during update of {WEBAPI_URL}{item_path}.
                 Error code is {res.status_code}''')
             return context.Response(body='Internal error during ingestion',
                                     content_type='text/plain', status_code=500)
 
     # Update the cells table based on the driver's or passenger's current and
     # previous locations
-    res = _update_cells_table(context, id, item_prefix)
+    res = _update_cells_table(context, item_path, item_prefix)
     if res.status_code != requests.codes.no_content:
         context.logger.error(f'''Error during update of cells table.
             Error code is {res.status_code}''')
@@ -79,8 +81,8 @@ def _generate_data_from_input(input_data_json):
     longitude = float(input_data["Longitude"])
     latitude = float(input_data["Latitude"])
 
-    # Use the Google s2Sphere library to calculate an S2 cell from the GPS
-    # longitude and latitude coordinates and get the cell ID
+    # Use the s2Sphere library to determine the Google S2 cell for the
+    # longitude and latitude GPS coordinates and retrieve the cell ID
     p1 = s2sphere.LatLng.from_degrees(latitude, longitude)
     cell = s2sphere.CellId.from_lat_lng(p1).parent(15)
     cell_id = str(cell.id())
@@ -89,33 +91,32 @@ def _generate_data_from_input(input_data_json):
     # table based on the record type - driver or passenger
     if record_type == 'driver':
         item_prefix = DRIVER_PREFIX
-        item_path = DRIVERS_TABLE_PATH
+        table_path = DRIVERS_TABLE_PATH
     else:
         item_prefix = PASSENGER_PREFIX
-        item_path = PASSENGERS_TABLE_PATH
+        table_path = PASSENGERS_TABLE_PATH
 
     # Set the path to the ingested driver/passenger table item (row)
-    id = item_path + item_prefix + input_id
+    item_path = table_path + item_prefix + input_id
 
     # Return the generated data - path to the driver/passenger table item, the
     # ID of the cell in which the driver/passenger is currently located, and
     # the attribute-name prefix for the record type (driver/passenger)
-    return id, cell_id, item_prefix
+    return item_path, cell_id, item_prefix
 
 
 # Update the cells table: if a driver's/passenger's location cell has changed,
 # update the driver/passenger count of the previous and new cell in the table
-def _update_cells_table(context, id, item_prefix):
+def _update_cells_table(context, item_path, item_prefix):
 
     # Get the driver's/passenger's Boolean cell-change indicator and current
     # and previous cell locations
     response_json = _webapi_getitem(
-        WEBAPI_URL, id,
+        WEBAPI_URL, item_path,
         exp_attrs=["change_cell_id_indicator",
                    "current_cell_id",
                    "previous_cell_id"])
 
-    # Check whether a cell update is needed:
     # Extract the values of the cell-change indicator and current and previous
     # cell ID attributes from the retrieved driver/passenger table item
     attrs = response_json["Item"]
@@ -123,8 +124,9 @@ def _update_cells_table(context, id, item_prefix):
     current_cell_id_val = attrs["current_cell_id"]["N"]
     previous_cell_id_val = attrs["previous_cell_id"]["N"]
 
-    # If the driver's or passenger's cell has changed (as indicated by the
-    # value of the change_cell_id_indicator attribute), increase the new-cell
+    # Check whether a cell update is needed: if the driver's or passenger's
+    # cell has changed (as indicated by the value of the
+    # change_cell_id_indicator attribute), increase the new-cell
     # drivers/passengers count and decrease the equivalent old-cell count
     if change_cell_id_indicator_val:
 
@@ -148,9 +150,8 @@ def _update_cells_table(context, id, item_prefix):
                                         content_type='text/plain',
                                         status_code=500)
 
-            # Decrease the driver/passenger count for the previous cell:
-            # subtract one from the current value of the cells-table
-            # driver/passenger count attribute (column)
+            # Decrease the driver/passenger count for the previous cell: if the
+            # previous count is greater than zero, subtract one from this count
             if int(previous_cell_id_val) > 0:
                 res = _webapi_updateitem(
                     WEBAPI_URL,
