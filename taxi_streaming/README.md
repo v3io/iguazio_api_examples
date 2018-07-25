@@ -122,7 +122,7 @@ Follow these steps to run the scripts and test the sample in less than two minut
 
 ## Code Walkthrough
 
-Following is an in-depth walkthrough of the sample's code files:
+Following are in-depth walkthroughs of the sample's code files:
 
 - [**create_random_drivers_data.py** &mdash; Generate Random Drive Data](#code_walkthrough_create_random_drivers_data_py)
 - [**create_drivers_stream.sh** &mdash; Create a Stream](#code_walkthrough_create_drivers_stream_sh)
@@ -135,7 +135,7 @@ Following is an in-depth walkthrough of the sample's code files:
 The [**create_random_drivers_data.py**](https://github.com/v3io/iguazio_api_examples/blob/1.5/taxi_streaming/create_random_drivers_data.py) Python application generates randomized drivers data and saves it to a **drivers_data.csv** file, which will be added to the stream as part of the [stream-data ingestion](#code_walkthrough_stream_drivers_data_py).
 The randomized data generation is used to support a standalone sample that can be run as-is on any instance of the iguazio Unified Data Platform.
 The use of a CSV file was chosen because it's a straightforward implementation that's easy to demonstrate.
-Real-life scenarios will typically use a more efficient method to retrieve the actual stream data.
+Real-world scenarios will typically use a more efficient method to retrieve the actual stream data.
 
 > **Note:** You can use the **create_random_drivers_data.sh** bash script to run the **create_random_drivers_data.py** application, as explained in [Step 1](#sample_run_create_random_drivers_data_sh) of the "Running the Code" instructions.
 
