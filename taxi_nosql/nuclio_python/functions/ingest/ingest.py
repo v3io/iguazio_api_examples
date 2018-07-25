@@ -52,8 +52,7 @@ def handler(context, event):
     if res.status_code != requests.codes.no_content:
             context.logger.error(f'''Error during update of {WEBAPI_URL}{item_path}.
                 Error code is {res.status_code}''')
-            return context.Response(body='Internal error during ingestion',
-                                    content_type='text/plain', status_code=500)
+            return context.Response(status_code=500)
 
     # Update the cells table based on the driver's or passenger's current and
     # previous locations
@@ -61,8 +60,7 @@ def handler(context, event):
     if res.status_code != requests.codes.no_content:
         context.logger.error(f'''Error during update of cells table.
             Error code is {res.status_code}''')
-        return context.Response(body='Internal error during ingestion',
-                                content_type='text/plain', status_code=500)
+        return context.Response(status_code=500)
 
     # Return status code 200 - completed successfully
     return context.Response(status_code=200)
