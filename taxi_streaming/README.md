@@ -271,11 +271,12 @@ A Spark `StreamingContext` object with a 10-seconds micro-batch interval is crea
 ssc = StreamingContext(spark.sparkContext, 10)
 ```
 
-The `V3IIOUtils.CreateDirectStream` method of the platform's Spark-Streaming Integration API is used to create an `InputDStream` Spark input-stream object (`stream`) that maps the Spark streaming context (`ssc`) to the **taxi_streaming_example/drivers_stream** platform stream (`STREAM_PATH`) of the "bigdata" container (`$CONTAINER_NAME`):
+The `V3IIOUtils.CreateDirectStream` method of the platform's Spark-Streaming Integration API is used to create an `InputDStream` Spark input-stream object (`stream`) that maps the Spark streaming context (`ssc`) to the **taxi_streaming_example/drivers_stream** platform stream (`STREAM_PATH`) of the "bigdata" container (`$CONTAINER_NAME`).
+The stream path is passed to the `createDirectStream` method within its `streamNames` parameter as a fully qualified path of the format <nobr>`v3io://<container name>/<stream-directory path within the container>`</nobr> (see `$V3IO_STREAM_PATH`):
 
 ```python
-v3ioConfig = {"container-alias": CONTAINER_NAME}
-stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH], v3ioConfig)
+v3ioConfig = {}
+stream = V3IOUtils.createDirectStream(ssc, v3ioConfig, [V3IO_STREAM_PATH])
 ```
 
 The Spark input stream (`stream`) is assigned the local `archive` data-consumption function as its Resilient Distributed Dataset (RDD) handler.
