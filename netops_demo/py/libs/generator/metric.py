@@ -1,4 +1,4 @@
-from generator.baseline.normal import Normal
+from libs.generator.baseline.normal import Normal
 # from generator.baseline.peak_error import Peak_error
 from random import Random
 
@@ -131,7 +131,7 @@ class Metric:
         while True:
             metric = self.validate_value(self.generator())
             yield {
-                self.name: metric,
+                'value': metric,
                 'alert': self.get_alert(metric=metric),
                 'is_error': self.is_error
             }

@@ -1,4 +1,4 @@
-from generator.metric import Metric
+from libs.generator.metric import Metric
 from random import Random
 
 
@@ -86,4 +86,4 @@ class Manager:
 
             # If we are not in an error state
             # else:
-            yield [next(component.get_metric()) for component in self.metrics]
+            yield {component.name: next(component.get_metric()) for component in self.metrics}
