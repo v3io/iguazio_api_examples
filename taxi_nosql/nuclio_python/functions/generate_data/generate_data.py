@@ -62,12 +62,12 @@ def _ingest_locations(context, num_records, max_record_id, record_type,
         random_location = _get_random_location(_weighted_keys(locations,
                                                weighted_locations))
 
-        # Construct the request's JSON body. The request includes the record
-        # type (driver/passenger), the respective ID, and the GPS coordinates
-        # of the current driver or passenger location.
+        # Construct the request's JSON body. The body includes the record type
+        # (driver/passenger), the respective ID, and the GPS coordinates of the
+        # current driver or passenger location.
         # For demo purposes, the location coordinates are generated as a random
         # offset of the current random weighted location.
-        request = {
+        request_json = {
             'RecordType': record_type,
             'ID': random.randint(1, max_record_id),
             'Longitude':
@@ -77,7 +77,7 @@ def _ingest_locations(context, num_records, max_record_id, record_type,
 
         # Ingest the location data by sending an HTTP request to the configured
         # ingestion URL
-        response = requests.put(INGEST_URL, data=json.dumps(request))
+        response = requests.put(INGEST_URL, data=json.dumps(request_json))
 
         if response.status_code != requests.codes.ok:
             message = f'''Ingestion of {record_type}s failed with error code
