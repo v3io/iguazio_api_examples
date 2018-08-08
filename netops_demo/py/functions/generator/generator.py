@@ -42,14 +42,6 @@ def _start_generating(context, configuration):
 def _stop_generating(context):
     context.logger.info_with('Stopping to generate')
 
-    # create a Manager with the given configuration
-    manager = Manager(metrics=configuration['metrics'],
-                      error_scenarios=configuration['error_scenarios'],
-                      error_rate=configuration['error_rate'])
-
-    # shove the manager in the context
-    setattr(context.user_data, 'manager', manager)
-
     # go back to idle
     _set_generating_state(context, 'idle')
 
