@@ -10,7 +10,9 @@ EXAMPLE_PATH = "/taxi_streaming_example/"
 # NoSQL tables Path
 NOSQL_TABLES_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH
 # Stream container-directory path
-STREAM_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH + "drivers_stream"
+STREAM_PATH = EXAMPLE_PATH + "drivers_stream"
+# Fully qualified v3io stream path
+V3IO_STREAM_PATH = "v3io://" + CONTAINER_NAME + STREAM_PATH
 # NoSQL drivers-Data table path
 DRIVERS_TABLE_PATH = NOSQL_TABLES_PATH + "/drivers_table/" 
 # NoSQL drivers Ride-Status Summary Table Path
@@ -49,11 +51,11 @@ spark = SparkSession.builder \
 
 # Create a Spark streaming context with a 10-seconds micro-batch interval
 ssc = StreamingContext(spark.sparkContext, 10)
-# Configure the platform stream's parent data container
+# Do not set any configuration properties for the stream
 v3ioConfig = {}
 # Map the platform stream to a Spark input stream using the platform's
 # Spark-Streaming Integration API
-stream = V3IOUtils.createDirectStream(ssc, v3ioConfig ,[STREAM_PATH])
+stream = V3IOUtils.createDirectStream(ssc, v3ioConfig, [V3IO_STREAM_PATH])
 
 # Assign the archive stream-data consumption function as the stream's
 # Resilient Distributed Dataset (RDD) handler
