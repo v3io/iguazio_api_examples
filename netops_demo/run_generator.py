@@ -27,7 +27,7 @@ if __name__ == '__main__':
             'alerts': {
                 'threshold': 30,
                 'alert': 'Low Throughput (StatReplace) below threshold (3.0)',
-                'type': -1
+                'type': False
             }
         },
         'Packet loss': {
