@@ -28,13 +28,21 @@ V3IO_HEADER_FUNCTION = 'X-v3io-function'
 # ingest it into drivers/passengers and cells tables
 def handler(context, event):
 
-    # Generate ingestion data from the input received in the event body - the
-    # driver/passenger table-item path, their current-location cell ID, and the
-    # attribute-name prefix for the record type (driver/passenger)
-    item_path, cell_id, item_prefix = _generate_data_from_input(event.body)
+    # Generate ingestion data from the input received in the event body:
+    # - Path to the drivers/passengers table
+    # - Value of the item's primary-key attribute = the item's name
+    # - Current-location cell ID
+    # - Attribute-name prefix for the record type (driver/passenger)
+    # - Path to the table item
+    # - Attribute-name prefix for the record type ("drivers_"/"passengers_")
+    table_path, key_value, cell_id, item_prefix = \
+        _generate_data_from_input(event.body)
+    item_path = table_path + key_value
+    key_name = item_prefix + "id"
 
     # Update the current and previous driver/passenger location information;
     # if the item doesn't already exist in the table, it will be created:
+    # - Set the item's primary key (name)
     # - Set the previous_cell_id attribute (column) to the value of the
     #   current_cell_id attribute or to zero for a new driver or passenger ID.
     # - Set the current_cell_id attribute (column) to the driver's/passenger's
@@ -43,16 +51,19 @@ def handler(context, event):
     #   that indicates whether the driver's/passenger's cell has changed.
     res = _webapi_updateitem(
         WEBAPI_URL,
-        item_path,
-        f'''SET previous_cell_id = if_not_exists(current_cell_id, 0);
+        table_path,
+        key_value,
+        key_name,
+        f'''{key_name} = "{key_value}";
+            previous_cell_id = if_not_exists(current_cell_id, 0);
             current_cell_id = {cell_id};
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
         ''')
 
     if res.status_code != requests.codes.no_content:
-            context.logger.error(f'''Error during update of {WEBAPI_URL}{item_path}.
-                Error code is {res.status_code}''')
-            return context.Response(status_code=500)
+        context.logger.error(f'''Error during update of {WEBAPI_URL}{item_path}.
+            Error code is {res.status_code}''')
+        return context.Response(status_code=500)
 
     # Update the cells table based on the driver's or passenger's current and
     # previous locations
@@ -95,12 +106,14 @@ def _generate_data_from_input(input_data_json):
         table_path = PASSENGERS_TABLE_PATH
 
     # Set the path to the ingested driver/passenger table item (row)
-    item_path = table_path + item_prefix + input_id
+    key_value = item_prefix + input_id
 
-    # Return the generated data - path to the driver/passenger table item, the
-    # ID of the cell in which the driver/passenger is currently located, and
-    # the attribute-name prefix for the record type (driver/passenger)
-    return item_path, cell_id, item_prefix
+    # Return the generated data:
+    # - Path to the drivers/passengers table
+    # - Value of the item's primary-key attribute = the item's name
+    # - Current-location cell ID
+    # - Attribute-name prefix for the record type ("drivers_"/"passengers_")
+    return table_path, key_value, cell_id, item_prefix
 
 
 # Update the cells table: if a driver's/passenger's location cell has changed,
@@ -127,19 +140,26 @@ def _update_cells_table(context, item_path, item_prefix):
     # change_cell_id_indicator attribute), increase the new-cell
     # drivers/passengers count and decrease the equivalent old-cell count
     if change_cell_id_indicator_val:
-
-            # Set the name of the cells-table count attribute to update using
-            # the record-type specific (driver/passenger) attribute-name prefix
+            # Set the name of the cells-table count attribute to update, based
+            # on the record type (driver/passenger)
             count_attribute = item_prefix + 'count'
+            # Set the name and value of the item's primary-key attribute
+            key_name = "cell_id"
+            key_value = "cell_" + current_cell_id_val
 
             # Increase the driver/passenger count for the current cell:
+            # - Set the new-location cell item's primary key (name)
             # - If the driver/passenger cells-table count attribute (column)
             #   doesn't yet exist, add it and initialize its value to zero.
             # - Increase the value of the count attribute by one.
             res = _webapi_updateitem(
                 WEBAPI_URL,
-                CELLS_TABLE_PATH + "cell_" + current_cell_id_val,
-                f'SET {count_attribute}=if_not_exists({count_attribute},0)+1;')
+                CELLS_TABLE_PATH,
+                key_value,
+                key_name,
+                f'''{key_name} = "{key_value}";
+                    {count_attribute}=if_not_exists({count_attribute},0)+1;
+                ''')
 
             if res.status_code != requests.codes.no_content:
                 context.logger.error(f'''Error during increment of count in
@@ -151,9 +171,15 @@ def _update_cells_table(context, item_path, item_prefix):
             # Decrease the driver/passenger count for the previous cell: if the
             # previous count is greater than zero, subtract one from this count
             if int(previous_cell_id_val) > 0:
+                # Set the name and value of the item's primary-key attribute
+                key_value = "cell_" + previous_cell_id_val
+
+                # Update the item
                 res = _webapi_updateitem(
                     WEBAPI_URL,
-                    CELLS_TABLE_PATH + "cell_" + previous_cell_id_val,
+                    CELLS_TABLE_PATH,
+                    key_value,
+                    key_name,
                     f'SET {count_attribute}={count_attribute}-1;')
 
             if res.status_code != requests.codes.no_content:
@@ -205,17 +231,21 @@ def _webapi_getitem(base_url, path_in_url, exp_attrs):
 
 
 # Prepare and send an UpdateItem NoSQL Web API request
-def _webapi_updateitem(base_url, path_in_url, update_expr):
+def _webapi_updateitem(base_url, table_path, key_value, key_name, update_expr):
 
     # Set the request URL
-    url = os.path.join(base_url, path_in_url)
+    url = os.path.join(base_url, table_path)
 
-    # Construct the request's JSON body
-    request_json = {}
-
-    # Set the UpdateExpression request parameter to the update-expression
-    # string received in the function call (update_expr)
-    request_json["UpdateExpression"] = update_expr
+    # Construct the request's JSON body:
+    # - "Key" is set to the name of the item's primary-key attribute name,
+    #   which is also the item name (assigned automatically to the __name
+    #   system attribute).
+    # - "UpdateExpression" is an update-expression string that determines the
+    #   item-attributes update logic.
+    request_json = {
+        'Key': {key_name: {'S': key_value}},
+        'UpdateExpression': update_expr
+    }
 
     # Set the request payload
     payload = json.dumps(request_json)
@@ -228,6 +258,6 @@ def _webapi_updateitem(base_url, path_in_url, update_expr):
         headers["Authorization"] = str(WEBAPI_CRED)
 
     # Send the request
-    res = requests.put(url, data=payload, headers=headers)
-    return res
+    response = requests.put(url, data=payload, headers=headers)
+    return response
 
