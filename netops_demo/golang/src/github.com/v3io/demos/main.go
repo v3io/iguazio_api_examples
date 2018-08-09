@@ -2,9 +2,9 @@ package main
 
 import (
 	"os"
-	
-	"github.com/v3io/demos/functions/ingest"
-	"github.com/v3io/demos/functions/query"
+
+	"github.com/v3io/demos/functions/ingester"
+	"github.com/v3io/demos/functions/querier"
 
 	"github.com/nuclio/nuclio-sdk-go"
 )

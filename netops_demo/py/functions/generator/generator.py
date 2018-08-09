@@ -55,8 +55,11 @@ def _get_generating_state(context):
     return context.user_data.generating_state
 
 
-def _generate(context, timestamp=None, target='ingest'):
+def _generate(context, timestamp=None, target=None):
     metrics_batch = {}
+
+    # get the target from the request to generate or the configuration
+    target = target or context.user_data.configuration.get('target')
 
     # use the timestamp provided or 'now'
     now = timestamp or int(time.time()) * 1000
@@ -70,8 +73,12 @@ def _generate(context, timestamp=None, target='ingest'):
 
         for generated_metric_name, generated_metric in next(context.user_data.manager.generate()).items():
 
-            # get metric in the batch
-            metric_in_batch = metrics_batch.setdefault(generated_metric_name, {})
+            # get metric, or create one with the proper labels
+            metric_in_batch = metrics_batch.setdefault(generated_metric_name, {
+                'labels': context.user_data.configuration['metrics'][generated_metric_name].get('labels'),
+            })
+            
+            # shove values
             metric_in_batch.setdefault('timestamps', []).append(timestamp)
             metric_in_batch.setdefault('values', []).append(generated_metric['value'])
             metric_in_batch.setdefault('alerts', []).append(generated_metric['alert'])

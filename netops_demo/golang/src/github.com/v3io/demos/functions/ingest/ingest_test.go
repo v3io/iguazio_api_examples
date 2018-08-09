@@ -1,7 +1,7 @@
 package ingest
 
 import (
-    "testing"
+	"testing"
 
 	"github.com/nuclio/logger"
 	"github.com/nuclio/nuclio-test-go"

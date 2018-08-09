@@ -7,9 +7,8 @@ Will output the `netops-py:latest` image.
 
 ## Generator
 
-### Manually deploying to (local) Nuclio
 ```sh
-nuctl deploy --run-image netops-generator:latest \
+nuctl deploy --run-image netops-py:latest \
 	--runtime python:3.6 \
 	--handler functions.generator.generator:handler \
 	--platform local \
@@ -24,7 +23,11 @@ nuctl deploy --run-image netops-generator:latest \
 ```
 {
   "metrics": {
-    "cpu_utilization_percent": {
+    "cpu_utilization": {
+      "labels": {
+        "ver": 1,
+        "unit": "percent"
+      },
       "metric": {
         "mu": 75,
         "sigma": 4,
@@ -37,7 +40,11 @@ nuctl deploy --run-image netops-generator:latest \
         "alert": "Operation - Chassis CPU Utilization (StatReplace) exceed Critical threshold (80.0)"
       }
     },
-    "throughput_mbyte_sec": {
+    "throughput": {
+      "labels": {
+        "ver": 1,
+        "unit": "mbyte_sec"
+      },
       "metric": {
         "mu": 200,
         "sigma": 50,
@@ -52,6 +59,10 @@ nuctl deploy --run-image netops-generator:latest \
       }
     },
     "packet_loss": {
+      "labels": {
+        "ver": 1,
+        "unit": "num_packets"
+      },
       "metric": {
         "mu": 1.5,
         "sigma": 0.01,
@@ -65,6 +76,10 @@ nuctl deploy --run-image netops-generator:latest \
       }
     },
     "latency": {
+      "labels": {
+        "ver": 1,
+        "unit": "microseconds"
+      },
       "metric": {
         "mu": 5,
         "sigma": 1,
@@ -80,24 +95,24 @@ nuctl deploy --run-image netops-generator:latest \
   },
   "error_scenarios": [
     {
-      "cpu_utilization_percent": 0,
+      "cpu_utilization": 0,
       "latency": 10,
       "packet_loss": 20,
-      "throughput_mbyte_sec": 30,
+      "throughput": 30,
       "length": 80
     },
     {
-      "cpu_utilization_percent": 30,
+      "cpu_utilization": 30,
       "latency": 10,
       "packet_loss": 20,
-      "throughput_mbyte_sec": 0,
+      "throughput": 0,
       "length": 80
     },
     {
-      "cpu_utilization_percent": 0,
+      "cpu_utilization": 0,
       "latency": 0,
       "packet_loss": 20,
-      "throughput_mbyte_sec": 20,
+      "throughput": 20,
       "length": 50
     }
   ],
