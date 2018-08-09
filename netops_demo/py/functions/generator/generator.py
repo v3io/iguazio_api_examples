@@ -1,6 +1,7 @@
 import time
 
-from libs.generator.manager import Manager
+import libs.generator.manager
+import libs.nuclio_sdk
 
 
 def handler(context, event):
@@ -11,7 +12,7 @@ def handler(context, event):
         _stop_generating(context)
     elif event.path == '/generate':
         if _get_generating_state(context) == 'generating':
-            return _generate(context)
+            return _generate(context, **(event.body or {}))
     else:
         context.logger.warn_with('Got unsupported path', method=event.method, path=event.path)
         return context.Response(status_code=400)
@@ -27,9 +28,9 @@ def _start_generating(context, configuration):
     context.logger.info_with('Starting to generate', configuration=configuration)
 
     # create a Manager with the given configuration
-    manager = Manager(metrics=configuration['metrics'],
-                      error_scenarios=configuration['error_scenarios'],
-                      error_rate=configuration['error_rate'])
+    manager = libs.generator.manager.Manager(metrics=configuration['metrics'],
+                                             error_scenarios=configuration['error_scenarios'],
+                                             error_rate=configuration['error_rate'])
 
     # shove the configuration/manager in the context
     setattr(context.user_data, 'configuration', configuration)
@@ -54,10 +55,12 @@ def _get_generating_state(context):
     return context.user_data.generating_state
 
 
-def _generate(context):
+def _generate(context, timestamp=None, target='ingest'):
     metrics_batch = {}
 
-    now = int(time.time()) * 1000
+    # use the timestamp provided or 'now'
+    now = timestamp or int(time.time()) * 1000
+
     samples_per_batch = context.user_data.configuration['samples_per_batch']
     sample_interval_ms = int(1000 / samples_per_batch)
 
@@ -74,4 +77,21 @@ def _generate(context):
             metric_in_batch.setdefault('alerts', []).append(generated_metric['alert'])
             metric_in_batch.setdefault('is_error', []).append(1 if generated_metric['is_error'] else 0)
 
-    return metrics_batch
+    # allow the user to control if output goes to ingestion or as a response (for debugging purposes)
+    if target.startswith('function'):
+
+        # function:netops-ingest -> netops-ingest
+        target_function = target.split(':')[1]
+
+        return _ingest(context, target_function, metrics_batch)
+    elif target == 'response':
+        return metrics_batch
+    else:
+        return context.Response(status_code=400)
+
+
+def _ingest(context, ingest_function_name, metrics_batch):
+    context.logger.debug_with('Sending metrics to ingest', name=ingest_function_name)
+
+    # simply call the ingest function
+    context.platform.call_function(ingest_function_name, libs.nuclio_sdk.Event(body=metrics_batch))
