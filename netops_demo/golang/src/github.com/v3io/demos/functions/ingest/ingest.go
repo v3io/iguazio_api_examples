@@ -100,6 +100,8 @@ func ingestMetricSamples(context *nuclio.Context,
 		"samples", len(samples.Timestamps))
 
 	for sampleIndex := 0; sampleIndex < len(samples.Timestamps); sampleIndex++ {
+
+		// TODO: can optimize as a pool of utils.Labels with `__name__` already set
 		labels := utils.Labels{
 			{Name: "__name__", Value: metricName},
 		}
