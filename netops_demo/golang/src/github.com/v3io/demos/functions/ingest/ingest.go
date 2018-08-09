@@ -6,6 +6,8 @@ import (
 	"sync"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/v3io/demos/functions/ingest/anodot"
+
 	"github.com/nuclio/nuclio-sdk-go"
 	"github.com/v3io/v3io-go-http"
 	"github.com/v3io/v3io-tsdb/pkg/config"
@@ -26,6 +28,7 @@ type metricSamples struct {
 
 type userData struct {
 	tsdbAppender tsdb.Appender
+	anodotAppender *anodot.Appender
 }
 
 func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
@@ -46,7 +49,7 @@ func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 		}
 
 		// iterate over values and ingest them into all time series datastores
-		if err := ingestMetricSamples(context, userData.tsdbAppender, metricName, metricSamples); err != nil {
+		if err := ingestMetricSamples(context, userData, metricName, metricSamples); err != nil {
 			return nil, nuclio.NewErrBadRequest(err.Error())
 		}
 	}
@@ -56,7 +59,41 @@ func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 
 // InitContext runs only once when the function runtime starts
 func InitContext(context *nuclio.Context) error {
-	context.Logger.InfoWith("Initializing")
+	var err error
+	var userData userData
+
+	// get configuration from env
+	tsdbAppenderPath := os.Getenv("INGEST_V3IO_TSDB_PATH")
+	anodotAppenderToken := os.Getenv("INGEST_ANODOT_TOKEN")
+
+	context.Logger.InfoWith("Initializing",
+		"tsdbAppenderPath", tsdbAppenderPath,
+		"anodotAppenderToken", anodotAppenderToken)
+
+	// create TSDB appender if path passed in configuration
+	if tsdbAppenderPath != "" {
+		userData.tsdbAppender, err = createTSDBAppender(context, tsdbAppenderPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	// create Anodot appender if token passed in configuration
+	if anodotAppenderToken != "" {
+		userData.anodotAppender, err = createAnodotAppender(context, anodotAppenderToken)
+		if err != nil {
+			return err
+		}
+	}
+
+	// set user data into the context
+	context.UserData = &userData
+
+	return nil
+}
+
+func createTSDBAppender(context *nuclio.Context, path string) (tsdb.Appender, error) {
+	context.Logger.InfoWith("Creating TSDB appender", "path", path)
 
 	adapterLock.Lock()
 	defer adapterLock.Unlock()
@@ -66,25 +103,27 @@ func InitContext(context *nuclio.Context) error {
 
 		v3ioConfig := config.V3ioConfig{}
 		config.InitDefaults(&v3ioConfig)
-		v3ioConfig.Path = os.Getenv("V3IO_TSDB_PATH")
+		v3ioConfig.Path = path
 
 		// create adapter once for all contexts
 		adapter, err = tsdb.NewV3ioAdapter(&v3ioConfig, context.DataBinding["db0"].(*v3io.Container), context.Logger)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	tsdbAppender, err := adapter.Appender()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	context.UserData = &userData{
-		tsdbAppender: tsdbAppender,
-	}
+	return tsdbAppender, nil
+}
 
-	return nil
+func createAnodotAppender(context *nuclio.Context, token string) (*anodot.Appender, error) {
+	context.Logger.InfoWith("Creating Anodot appender", "token", token)
+
+	return anodot.NewAppender(context.Logger, token)
 }
 
 func allMetricSamplesFieldLenEqual(samples *metricSamples) bool {
@@ -94,26 +133,31 @@ func allMetricSamplesFieldLenEqual(samples *metricSamples) bool {
 }
 
 func ingestMetricSamples(context *nuclio.Context,
-	tsdbAppender tsdb.Appender,
+	userData *userData,
 	metricName string,
 	samples *metricSamples) error {
 	context.Logger.InfoWith("Ingesting",
 		"metricName", metricName,
 		"samples", len(samples.Timestamps))
 
-	errgroup.Group
+	var ingestErrGroup errgroup.Group
 
-	// ingest to TSDB
-	if err := ingestMetricSamplesToTSDB(context, tsdbAppender, metricName, samples); err != nil {
-		return err
+	// ingest into TSDB if configure dto
+	if userData.tsdbAppender != nil {
+		ingestErrGroup.Go(func() error {
+			return ingestMetricSamplesToTSDB(context, userData.tsdbAppender, metricName, samples)
+		})
 	}
 
-	// ingest to Anodot
-	if err := ingestMetricSamplesToTSDB(context, tsdbAppender, metricName, samples); err != nil {
-		return err
+	// ingest into Anodot
+	if userData.anodotAppender != nil {
+		ingestErrGroup.Go(func() error {
+			return ingestMetricSamplesToAnodot(context, userData.anodotAppender, metricName, samples)
+		})
 	}
 
-	return nil
+	// wait and return composite error
+	return ingestErrGroup.Wait()
 }
 
 func ingestMetricSamplesToTSDB(context *nuclio.Context,
@@ -140,25 +184,22 @@ func ingestMetricSamplesToTSDB(context *nuclio.Context,
 }
 
 func ingestMetricSamplesToAnodot(context *nuclio.Context,
-	tsdbAppender tsdb.Appender,
+	anodotAppender *anodot.Appender,
 	metricName string,
 	samples *metricSamples) error {
 
-	// TODO: can optimize as a pool of utils.Labels with `__name__` already set
-	labels := map[string]interface{}{
-		"ver":  1,
-		"what": metricName,
-	}
+	// add name as "what"
+	samples.Labels["what"] = metricName
+
+	var metrics []*anodot.Metric
 
 	for sampleIndex := 0; sampleIndex < len(samples.Timestamps); sampleIndex++ {
-
-		// shove to appender
-		if _, err := tsdbAppender.Add(labels,
-			int64(samples.Timestamps[sampleIndex]),
-			samples.Values[sampleIndex]); err != nil {
-			return err
-		}
+		metrics = append(metrics, &anodot.Metric{
+			Properties: samples.Labels,
+			Timestamp: uint64(samples.Timestamps[sampleIndex]),
+			Value: samples.Values[sampleIndex],
+		})
 	}
 
-	return nil
+	return anodotAppender.Append(metrics)
 }

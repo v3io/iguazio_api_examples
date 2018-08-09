@@ -26,7 +26,8 @@ nuctl deploy --run-image netops-py:latest \
     "cpu_utilization": {
       "labels": {
         "ver": 1,
-        "unit": "percent"
+        "unit": "percent",
+        "target_type": "gauge"
       },
       "metric": {
         "mu": 75,
@@ -43,7 +44,8 @@ nuctl deploy --run-image netops-py:latest \
     "throughput": {
       "labels": {
         "ver": 1,
-        "unit": "mbyte_sec"
+        "unit": "mbyte_sec",
+        "target_type": "gauge"
       },
       "metric": {
         "mu": 200,
@@ -61,7 +63,8 @@ nuctl deploy --run-image netops-py:latest \
     "packet_loss": {
       "labels": {
         "ver": 1,
-        "unit": "num_packets"
+        "unit": "num_packets",
+        "target_type": "counter"
       },
       "metric": {
         "mu": 1.5,
@@ -78,7 +81,8 @@ nuctl deploy --run-image netops-py:latest \
     "latency": {
       "labels": {
         "ver": 1,
-        "unit": "microseconds"
+        "unit": "microseconds",
+        "target_type": "gauge"
       },
       "metric": {
         "mu": 5,

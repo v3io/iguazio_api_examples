@@ -55,21 +55,22 @@ def _get_generating_state(context):
     return context.user_data.generating_state
 
 
-def _generate(context, timestamp=None, target=None):
+def _generate(context, start_timestamp=None, end_timestamp=None, samples_per_batch=None, target=None):
     metrics_batch = {}
 
     # get the target from the request to generate or the configuration
     target = target or context.user_data.configuration.get('target')
 
-    # use the timestamp provided or 'now'
-    now = timestamp or int(time.time()) * 1000
+    # start time / end time
+    start_timestamp = start_timestamp or int(time.time())
+    end_timestamp = end_timestamp or (start_timestamp + 1)
 
-    samples_per_batch = context.user_data.configuration['samples_per_batch']
-    sample_interval_ms = int(1000 / samples_per_batch)
+    samples_per_batch = samples_per_batch or context.user_data.configuration['samples_per_batch']
+    sample_interval_seconds = (end_timestamp - start_timestamp) / samples_per_batch
 
     # generate metrics
     for sample_idx in range(samples_per_batch):
-        timestamp = now + (sample_interval_ms * sample_idx)
+        timestamp = int(start_timestamp + (sample_interval_seconds * sample_idx))
 
         for generated_metric_name, generated_metric in next(context.user_data.manager.generate()).items():
 
