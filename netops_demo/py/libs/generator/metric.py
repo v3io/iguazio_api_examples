@@ -42,6 +42,7 @@ class Metric:
         self.is_threshold_below = threshold_alerts_dict.get('type') if 'type' in threshold_alerts_dict.keys() else True
 
         self.is_error = False
+        self.is_in_peak_error = False
         self.steps = 0
         self.error_length = 80
 
@@ -70,6 +71,7 @@ class Metric:
 
             # Are we in Peak-Error?
             else:
+                self.is_in_peak_error = True
                 yield return_peak()
 
     def generator(self):
@@ -123,6 +125,7 @@ class Metric:
         # Return generator to Normal
         self.current_metric = self.generator_metric
         self.is_error = False
+        self.is_in_peak_error = False
         self.steps = 0
         self.error_length = 0
         return 0
@@ -133,5 +136,5 @@ class Metric:
             yield {
                 'value': metric,
                 'alert': self.get_alert(metric=metric),
-                'is_error': self.is_error
+                'is_error': self.is_in_peak_error
             }
