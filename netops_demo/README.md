@@ -11,7 +11,22 @@ Setting up an Iguazio system including Grafana and Nuclio is out of the scope of
 ## Deploying and running the demo
 
 ### With helm on Kubernetes
-TODO: describe how to deploy the demo using helm.
+```sh
+helm repo add v3io-demo https://v3io.github.io/helm-charts/demo
+helm install v3io-demo/netops \
+  --set ingest.tsdb.url <webapi url> \
+  --set ingest.tsdb.username <webapi username> \
+  --set ingest.tsdb.password <webapi password> \
+  --set ingest.tsdb.path <tsdb path>
+```
+
+> Note: To ingest into Anodot, add `--set ingest.anodot.token <anodot token>` to the above. 
+
+The demo is configured with defaults, as can be found in the values.yaml (#REF). You can download and modify these settings and pass `--values <values-file-path>` rather than the `--set` arguments above. The generator is configured through a Kubernetes configmap, so it comes up configured. All we need to do is start the generation, including a day of historical data:
+
+```sh
+echo '{"num_historical_seconds": 86400}' | http ???/start
+```
 
 ### With nuctl on local Docker
 > Note: Pass `--verbose` if you'd like to see what goes behind the scenes of these commands, or if you are running into problems
@@ -104,20 +119,37 @@ We can now start the generation, indicating that we want to prime the time serie
 echo '{"num_historical_seconds": 86400}' | http localhost:<function port>/start
 ```
 
-## Building the demo
+## Developing
+
+### Python (Pycharm)
+Create a project at `py` and specify a virtualenv under `py/venv`. Install the `requirements.txt` file and simply one of the unit tests with `Unittest` (e.g. py/functions/generate/generate_test.py). This uses a Nuclio SDK Python wrapper.
+
+### Golang (Goland)
+Create a project at `golang/src/github.com/v3io/demos` and specify `GOPATH` to be `golang`. Execute `go get` to some packages that cannot be vendored:
+```sh
+go get github.com/nuclio/logger github.com/nuclio/nuclio-sdk-go github.com/v3io/v3io-go-http
+```
+
+Run the unit test at `src/github.com/v3io/demos/functions/ingest/ingest_test.go`. This uses a Nuclio SDK Golang wrapper.
+
+### Building the demo
 
 Clone this repository and cd into the netops directory:
 ```sh
-TODO
+git clone git@github.com:v3io/demos
+cd netops
 ```
 
 ### Building the function images
 Modify the source code and build the images:
 ```sh
-make
+NETOPS_TAG=latest make
 ```
 
-This will output `netops-golang:latest` and `netops-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md). 
+This will output `netops-demo-golang:latest` and `netops-demo-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md). 
 > The `golang` image contains the `ingest` and `query` functions. The `py` image contains the `generate` and `train` functions. By bunching together a few functions inside a single image we allow for easily sharing code without worrying about versioning, reducing the number of moving parts, etc. 
 
-Push the images to your favorite Docker registry and deploy using one of the methods above
+Push the images to your favorite Docker registry:
+```
+NETOPS_TAG=latest NETOPS_REGISTRY_URL=mydockerhubaccount make push
+```

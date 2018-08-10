@@ -6,7 +6,7 @@ metadata:
     nuclio.io/project-name: {{ .Values.project.name }}
 spec:
   handler: main:Ingest
-  image: {{ .Values.ingest.image.repository }}:{{ .Values.ingest.image.repository }}
+  image: {{ .Values.ingest.image.repository }}:{{ .Values.ingest.image.tag }}
   replicas: 1
   runtime: golang
   env:

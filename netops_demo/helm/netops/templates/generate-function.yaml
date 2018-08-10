@@ -6,13 +6,13 @@ metadata:
     nuclio.io/project-name: {{ .Values.project.name }}
 spec:
   env:
-  - name: GENERATOR_CONFIG
+  - name: GENERATOR_CONFIGURATION
     valueFrom:
       configMapKeyRef:
         name: {{ template "generateName" . }}-config
         key: configuration.json
   handler: functions.generate.generate:generate
-  image: {{ .Values.generate.image.repository }}:{{ .Values.generate.image.repository }}
+  image: {{ .Values.generate.image.repository }}:{{ .Values.generate.image.tag }}
   replicas: 1
   runtime: python:3.6
   triggers:

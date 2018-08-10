@@ -54,7 +54,9 @@ ingest:
     url: http://10.0.0.1:8081/bigdata
     username: myusername
     password: mypassword
-    path: mytsdb
+    path: mytsdbpath
+  # anodot:
+  #   token: myanodottoken
 
 project:
   name: netops
