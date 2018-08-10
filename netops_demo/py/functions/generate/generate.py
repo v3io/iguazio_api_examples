@@ -9,12 +9,16 @@ import libs.nuclio_sdk
 def generate(context, event):
 
     if event.path == '/configure':
+        if type(event.body) is not dict:
+            return context.Response(status_code=400)
+
         _configure(context, event.body)
     elif event.path == '/start':
-        _start(context)
+        _start(context, event.body)
     elif event.path == '/stop':
         _stop(context)
-    elif event.path == '/generate':
+    elif event.path in ['/generate', '/', '']:
+        print(context.user_data.state)
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
     else:
@@ -56,8 +60,23 @@ def _configure(context, configuration):
         pass
 
 
-def _start(context):
-    context.logger.info_with('Starting to generate', prev_state=context.user_data.state)
+def _start(context, start_configuration):
+    context.logger.info_with('Starting to generate',
+                             start_configuration=start_configuration,
+                             prev_state=context.user_data.state)
+
+    # if there's configuration, check if we need to generate historical data
+    if type(start_configuration) is dict:
+        now = int(time.time())
+
+        # get the point in time in which to generate historical data
+        start_timestamp = now - start_configuration['num_historical_seconds']
+
+        # generate a few seconds into the future
+        end_timestamp = now + 10
+
+        # generate using the defaults from the configuration
+        _generate(context, start_timestamp, end_timestamp)
 
     # set state to generating so that periodically we'll generate
     context.user_data.state = 'generating'
@@ -76,8 +95,8 @@ def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, 
     target = target or context.user_data.configuration.get('target')
 
     # set some defaults
-    max_samples_per_batch = max_samples_per_batch or ((2 ** 64) - 1)
-    interval = interval or 1
+    max_samples_per_batch = max_samples_per_batch or context.user_data.configuration.get('max_samples_per_batch') or ((2 ** 64) - 1)
+    interval = interval or context.user_data.configuration.get('interval') or 1
     start_timestamp = start_timestamp or int(time.time())
     end_timestamp = end_timestamp or (start_timestamp + interval)
 
@@ -142,5 +161,7 @@ def _send_metrics_batch_to_target(context, target, metrics_batch):
         return context.platform.call_function(target_function, libs.nuclio_sdk.Event(body=metrics_batch))
     elif target == 'response':
         return metrics_batch
+    elif target == 'log':
+        context.logger.info_with('Sending metrics batch', metrics_batch=metrics_batch)
     else:
         raise ValueError(f'Unknown target type {target}')
