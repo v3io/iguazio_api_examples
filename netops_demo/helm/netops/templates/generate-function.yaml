@@ -5,6 +5,8 @@ metadata:
   labels:
     nuclio.io/project-name: {{ .Values.project.name }}
 spec:
+  build:
+    codeEntryType: image
   env:
   - name: GENERATOR_CONFIGURATION
     valueFrom:

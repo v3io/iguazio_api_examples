@@ -71,12 +71,13 @@ def _start(context, start_configuration):
 
         # get the point in time in which to generate historical data
         start_timestamp = now - start_configuration['num_historical_seconds']
+        interval = start_configuration.get('interval')
 
         # generate a few seconds into the future
         end_timestamp = now + 10
 
         # generate using the defaults from the configuration
-        _generate(context, start_timestamp, end_timestamp)
+        _generate(context, start_timestamp, end_timestamp, interval)
 
     # set state to generating so that periodically we'll generate
     context.user_data.state = 'generating'

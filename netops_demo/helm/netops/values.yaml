@@ -5,7 +5,7 @@ generate:
     pullPolicy: Always
   configuration: 
     interval: 1
-    target: function:netops-demo-ingest
+    target: function:ingest
     max_samples_per_batch: 720
     metrics:
       cpu_utilization:
@@ -55,8 +55,10 @@ ingest:
     username: myusername
     password: mypassword
     path: mytsdbpath
-  # anodot:
-  #   token: myanodottoken
+  anodot:
+    enabled: false
+    url: https://api.anodot.com
+    token: some-token
 
 project:
   name: netops

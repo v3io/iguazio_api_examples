@@ -402,10 +402,8 @@ func (suite *ingestSuite) TestIngestValid() {
 	}
 
 	// invoke the tested function with the new event and log it's output
-	response, err := suite.testContext.Invoke(&ingestionBatchEvent)
+	_, err := suite.testContext.Invoke(&ingestionBatchEvent)
 	suite.Require().NoError(err)
-
-	suite.testContext.Logger.InfoWith("Run complete", "resp", response, "err", err)
 }
 
 func TestProvisionerTestSuite(t *testing.T) {
