@@ -30,7 +30,7 @@ func NewAppender(parentLogger logger.Logger, token string) (*Appender, error) {
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		appendEndpoint: fmt.Sprintf("https://api.anodot.com/api/v1/metrics?token=%s&protocol=anodot20", token),
+		appendEndpoint: fmt.Sprintf("https://api-poc.anodot.com/api/v1/metrics?token=%s&protocol=anodot20", token),
 	}, nil
 }
 

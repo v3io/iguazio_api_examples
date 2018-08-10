@@ -10,4 +10,5 @@ golang:
 		--build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos \
 		src/github.com/v3io/demos
 
+.PHONY: all
 all: golang py

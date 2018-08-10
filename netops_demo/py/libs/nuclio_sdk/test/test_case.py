@@ -23,7 +23,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self._platform = libs.nuclio_sdk.test.Platform()
-        self._environ_copy = copy.copy(os.environ)
+        self._environ_copy = copy.deepcopy(os.environ)
 
     def tearDown(self):
         os.environ = self._environ_copy
