@@ -1,4 +1,4 @@
-ARG NUCLIO_TAG=0.5.6
+ARG NUCLIO_TAG=unstable
 ARG NUCLIO_ARCH=amd64
 ARG NUCLIO_BASE_IMAGE=python:3.7
 
@@ -17,7 +17,7 @@ COPY --from=processor /home/nuclio/bin/py /opt/nuclio/
 COPY --from=uhttpc /home/nuclio/bin/uhttpc /usr/local/bin/uhttpc
 
 # Copy the appropriate functions
-COPY functions/generator /opt/nuclio/functions/generator
+COPY functions/generate /opt/nuclio/functions/generate
 
 # Copy all of the shared code
 COPY libs /opt/nuclio/libs

@@ -29,14 +29,11 @@ class Platform(object):
         self._call_function_mock = unittest.mock.MagicMock()
         self._kind = 'test'
 
-        # for tests that need a context
-        self._context = libs.nuclio_sdk.Context(self._logger, self)
-
     def call_handler(self, handler, event):
-        return handler(self._get_handler_context(handler), event)
+        return handler(self.get_context(handler), event)
 
     def call_handler_with_context_mutation(self, handler, event, context_mutator):
-        context = self._get_handler_context(handler)
+        context = self.get_context(handler)
 
         # mutate the context
         context = context_mutator(context)
@@ -50,10 +47,6 @@ class Platform(object):
         return self._call_function_mock.call_args_list[index][0]
 
     @property
-    def context(self):
-        return self._context
-
-    @property
     def kind(self):
         return self._kind
 
@@ -61,7 +54,7 @@ class Platform(object):
     def call_function_mock(self):
         return self._call_function_mock
 
-    def _get_handler_context(self, handler):
+    def get_context(self, handler):
         try:
             return self._handler_contexts[handler]
         except KeyError:

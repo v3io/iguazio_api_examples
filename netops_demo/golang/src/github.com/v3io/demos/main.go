@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	
+
 	"github.com/v3io/demos/functions/ingest"
 	"github.com/v3io/demos/functions/query"
 

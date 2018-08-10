@@ -1,0 +1,6 @@
+apiVersion: nuclio.io/v1beta1
+kind: Project
+metadata:
+  name: {{ .Values.project.name }}
+spec:
+  displayName: {{ .Values.project.displayName }}

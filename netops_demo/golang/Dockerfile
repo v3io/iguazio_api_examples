@@ -12,6 +12,9 @@ FROM ${NUCLIO_ONBUILD_IMAGE} as builder
 # From the base image
 FROM ${NUCLIO_BASE_IMAGE}
 
+# install ca-certificates to get HTTPS
+RUN apk add --no-cache --update ca-certificates
+
 # Copy required objects from the suppliers
 COPY --from=builder /home/nuclio/bin/processor /usr/local/bin/processor
 COPY --from=builder /home/nuclio/bin/handler.so /opt/nuclio/handler.so
