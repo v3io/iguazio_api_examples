@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"encoding/json"
 	"bytes"
+	"io/ioutil"
 
 	"github.com/nuclio/logger"
-	"io/ioutil"
 )
 
 type Metric struct {
@@ -24,13 +24,13 @@ type Appender struct {
 	appendEndpoint string
 }
 
-func NewAppender(parentLogger logger.Logger, token string) (*Appender, error) {
+func NewAppender(parentLogger logger.Logger, url string, token string) (*Appender, error) {
 	return &Appender{
 		logger: parentLogger.GetChild("anodot"),
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		appendEndpoint: fmt.Sprintf("https://api-poc.anodot.com/api/v1/metrics?token=%s&protocol=anodot20", token),
+		appendEndpoint: fmt.Sprintf("%s/api/v1/metrics?token=%s&protocol=anodot20", url, token),
 	}, nil
 }
 

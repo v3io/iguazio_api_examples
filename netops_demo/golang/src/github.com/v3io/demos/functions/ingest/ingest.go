@@ -64,10 +64,12 @@ func InitContext(context *nuclio.Context) error {
 
 	// get configuration from env
 	tsdbAppenderPath := os.Getenv("INGEST_V3IO_TSDB_PATH")
+	anodotAppenderURL := os.Getenv("INGEST_ANODOT_URL")
 	anodotAppenderToken := os.Getenv("INGEST_ANODOT_TOKEN")
 
 	context.Logger.InfoWith("Initializing",
 		"tsdbAppenderPath", tsdbAppenderPath,
+		"anodotAppenderURL", anodotAppenderURL,
 		"anodotAppenderToken", anodotAppenderToken)
 
 	// create TSDB appender if path passed in configuration
@@ -80,7 +82,9 @@ func InitContext(context *nuclio.Context) error {
 
 	// create Anodot appender if token passed in configuration
 	if anodotAppenderToken != "" {
-		userData.anodotAppender, err = createAnodotAppender(context, anodotAppenderToken)
+		userData.anodotAppender, err = createAnodotAppender(context,
+			anodotAppenderURL,
+			anodotAppenderToken)
 		if err != nil {
 			return err
 		}
@@ -120,10 +124,10 @@ func createTSDBAppender(context *nuclio.Context, path string) (tsdb.Appender, er
 	return tsdbAppender, nil
 }
 
-func createAnodotAppender(context *nuclio.Context, token string) (*anodot.Appender, error) {
-	context.Logger.InfoWith("Creating Anodot appender", "token", token)
+func createAnodotAppender(context *nuclio.Context, url string, token string) (*anodot.Appender, error) {
+	context.Logger.InfoWith("Creating Anodot appender", "url", url, "token", token)
 
-	return anodot.NewAppender(context.Logger, token)
+	return anodot.NewAppender(context.Logger, url, token)
 }
 
 func allMetricSamplesFieldLenEqual(samples *metricSamples) bool {
