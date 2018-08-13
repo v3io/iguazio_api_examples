@@ -1,5 +1,4 @@
 from libs.generator.baseline.normal import Normal
-# from generator.baseline.peak_error import Peak_error
 from random import Random
 
 

@@ -2,7 +2,7 @@ from libs.generator.metric import Metric
 from random import Random
 
 
-class Manager:
+class Device:
 
     def __init__(self, metrics: dict, error_scenarios: [], error_rate: float):
         '''

@@ -2,12 +2,11 @@ import os
 import time
 import json
 
-import libs.generator.manager
+import libs.generator.deployment
 import libs.nuclio_sdk
 
 
 def generate(context, event):
-
     if event.path == '/configure':
         if type(event.body) is not dict:
             return context.Response(status_code=400)
@@ -17,6 +16,8 @@ def generate(context, event):
         _start(context, event.body)
     elif event.path == '/stop':
         _stop(context)
+    elif event.path == '/locations':
+        return _locations(context)
     elif event.path in ['/generate', '/', '']:
         print(context.user_data.state)
         if context.user_data.state == 'generating':
@@ -27,7 +28,6 @@ def generate(context, event):
 
 
 def init_context(context):
-
     # initialize context structure
     for context_attr in ['state', 'configuration', 'manager']:
         setattr(context.user_data, context_attr, None)
@@ -42,17 +42,15 @@ def init_context(context):
         pass
 
 
-def _configure(context, configuration):
+def _configure(context, configuration: dict):
     context.logger.info_with('Configuring', configuration=configuration)
 
-    # create a Manager with the given configuration
-    manager = libs.generator.manager.Manager(metrics=configuration['metrics'],
-                                             error_scenarios=configuration['error_scenarios'],
-                                             error_rate=configuration['error_rate'])
+    # create a Full Network Deployment given configuration
+    deployment = libs.generator.deployment.Deployment(configuration=configuration)
 
     # shove the configuration/manager in the context
     context.user_data.configuration = configuration
-    context.user_data.manager = manager
+    context.user_data.deployment = deployment
 
     try:
         context.user_data.state = configuration['state']
@@ -89,14 +87,31 @@ def _stop(context):
     # go back to idle
     context.user_data.state = 'idle'
 
+def _locations(context):
+    deployment = context.user_data.deployment
+    context.logger.info_with('Sending list of locations')
 
-def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, max_samples_per_batch=None, target=None):
+    locations = []
+    for company in deployment.companies:
+        for i, location in enumerate(company.locations):
+            current_location = {
+                'key': f'{company.name}/{i}',
+                'latitude': location[0],
+                'longtitude': location[1],
+                'name': f'{company.name}/{i}'
+            }
+            locations.append(current_location)
 
+    return locations
+
+def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, max_samples_per_batch=None,
+              target=None):
     # get the target from the request to generate or the configuration
     target = target or context.user_data.configuration.get('target')
 
     # set some defaults
-    max_samples_per_batch = max_samples_per_batch or context.user_data.configuration.get('max_samples_per_batch') or ((2 ** 64) - 1)
+    max_samples_per_batch = max_samples_per_batch or context.user_data.configuration.get('max_samples_per_batch') or (
+            (2 ** 64) - 1)
     interval = interval or context.user_data.configuration.get('interval') or 1
     start_timestamp = start_timestamp or int(time.time())
     end_timestamp = end_timestamp or (start_timestamp + interval)
@@ -105,6 +120,9 @@ def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, 
     num_samples_left = int((end_timestamp - start_timestamp) / interval)
 
     responses = []
+
+    context.logger.info_with("Generating",
+                             samples_left=num_samples_left)
 
     while num_samples_left > 0:
         num_samples = min(num_samples_left, max_samples_per_batch)
@@ -135,20 +153,65 @@ def _generate_batch(context, start_timestamp, num_samples, interval):
     for sample_idx in range(num_samples):
         timestamp = int(start_timestamp + (interval * sample_idx))
 
-        for generated_metric_name, generated_metric in next(context.user_data.manager.generate()).items():
+        generated_metrics = next(context.user_data.deployment.generate())
+        for company, locations in generated_metrics.items():
+            # Get or Create company
+            dict_cmp = metrics_batch.setdefault(company, {})
+            for location, devices in locations.items():
+                current_coordinates = devices['location']
+                latitude = current_coordinates[0],
+                longtitude = current_coordinates[1]
 
-            # get metric, or create one with the proper labels
-            metric_in_batch = metrics_batch.setdefault(generated_metric_name, {
-                'labels': context.user_data.configuration['metrics'][generated_metric_name].get('labels'),
-            })
-            
-            # shove values
-            metric_in_batch.setdefault('timestamps', []).append(timestamp)
-            metric_in_batch.setdefault('values', []).append(generated_metric['value'])
-            metric_in_batch.setdefault('alerts', []).append(generated_metric['alert'])
-            metric_in_batch.setdefault('is_error', []).append(1 if generated_metric['is_error'] else 0)
+                # Get or create initial location labels
+                loc_labels = {
+                    'labels': {
+                        'latitude': latitude[0],
+                        'longtitude': longtitude,
+                        'name': company,
+                        'location': f'{company}/{location}'
+                    }
+                }
+                # Get or create location (company -> location)
+                dict_loc = dict_cmp.setdefault(location, {})
 
-    return metrics_batch
+                for device, metrics in devices['devices'].items():
+                    # Get or create device (company -> location -> device
+                    dict_device = dict_loc.setdefault(device, {})
+
+                    for generated_metric_name, generated_metric in metrics.items():
+                        # Get or create metric (company -> location -> device -> metric
+                        dict_metric = dict_device.setdefault(generated_metric_name, {
+                            'labels': {**loc_labels['labels'],
+                                       **context.user_data.configuration['metrics'][generated_metric_name].get(
+                                           'labels')},
+                        })
+
+                        # shove values
+                        dict_metric.setdefault('timestamps', []).append(timestamp)
+                        dict_metric.setdefault('values', []).append(
+                            generated_metric['value'])
+                        dict_metric.setdefault('alerts', []).append(
+                            generated_metric['alert'])
+                        dict_metric.setdefault('is_error', []).append(
+                            1 if generated_metric['is_error'] else 0)
+
+                        # Save metric
+                        dict_device[generated_metric_name] = dict_metric
+                    # Save device
+                    dict_loc[device] = dict_device
+                # Save location
+                dict_cmp[location] = dict_loc
+            # Save company
+            metrics_batch[company] = dict_cmp
+
+    # Translate dict to array
+    result = []
+    for company, locations in metrics_batch.items():
+        for location, devices in locations.items():
+            for device, metrics in devices.items():
+                result.append(metrics)
+
+    return result
 
 
 def _send_metrics_batch_to_target(context, target, metrics_batch):

@@ -104,11 +104,20 @@ echo '{
       "length": 80
     }
   ],
+  "deployment": {
+        "companies": 5,
+        "locations": 3,
+        "devices": 5,
+        "locations_list": {
+            "nw": "(51.520249, -0.071591)",
+            "se": "(51.490988, -0.188702)"
+        }
+    },
   "errors": [],
   "error_rate": 0.001,
   "interval": 1,
-  "target": "function:netops-demo-ingest",
-  "max_samples_per_batch": 720
+  "target": "response",
+  "max_samples_per_batch": 100
 }
 ' | http localhost:<function port>/configure
 ```
