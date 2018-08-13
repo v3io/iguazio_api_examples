@@ -87,6 +87,7 @@ def _stop(context):
     # go back to idle
     context.user_data.state = 'idle'
 
+
 def _locations(context):
     deployment = context.user_data.deployment
     context.logger.info_with('Sending list of locations')
@@ -104,7 +105,12 @@ def _locations(context):
 
     return locations
 
-def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, max_samples_per_batch=None,
+
+def _generate(context,
+              start_timestamp=None,
+              end_timestamp=None,
+              interval=None,
+              max_samples_per_batch=None,
               target=None):
     # get the target from the request to generate or the configuration
     target = target or context.user_data.configuration.get('target')
@@ -145,6 +151,39 @@ def _generate(context, start_timestamp=None, end_timestamp=None, interval=None, 
     if responses:
         return responses
 
+def _create_metric_dict(context, dict_device: dict,
+                        device: dict,
+                        labels: dict,
+                        metric: dict,
+                        metric_name: str,
+                        timestamp):
+    dict_metric = dict_device.setdefault(metric_name, {
+        'labels': {**labels['labels'],
+                   **device,
+                   **context.user_data.configuration['metrics'][metric_name].get(
+                       'labels')},
+    })
+
+    # shove values
+    dict_metric.setdefault('timestamps', []).append(timestamp)
+    dict_metric.setdefault('values', []).append(
+        metric['value'])
+    dict_metric.setdefault('alerts', []).append(
+        metric['alert'])
+    dict_metric.setdefault('is_error', []).append(
+        1 if metric['is_error'] else 0)
+
+    return dict_metric
+
+def _metrics_batch_dict_to_array(metrics_batch: dict):
+    result = []
+    for company, locations in metrics_batch.items():
+        for location, devices in locations.items():
+            for device, metrics in devices.items():
+                result.append(metrics)
+
+    return result
+
 
 def _generate_batch(context, start_timestamp, num_samples, interval):
     metrics_batch = {}
@@ -157,16 +196,13 @@ def _generate_batch(context, start_timestamp, num_samples, interval):
         for company, locations in generated_metrics.items():
             # Get or Create company
             dict_cmp = metrics_batch.setdefault(company, {})
-            for location, devices in locations.items():
-                current_coordinates = devices['location']
-                latitude = current_coordinates[0],
-                longtitude = current_coordinates[1]
 
+            for location, devices in locations.items():
                 # Get or create initial location labels
                 loc_labels = {
                     'labels': {
-                        'latitude': latitude[0],
-                        'longtitude': longtitude,
+                        'latitude': devices['location'][0],
+                        'longtitude': devices['location'][1],
                         'name': company,
                         'location': f'{company}/{location}'
                     }
@@ -179,24 +215,13 @@ def _generate_batch(context, start_timestamp, num_samples, interval):
                     dict_device = dict_loc.setdefault(device, {})
 
                     for generated_metric_name, generated_metric in metrics.items():
-                        # Get or create metric (company -> location -> device -> metric
-                        dict_metric = dict_device.setdefault(generated_metric_name, {
-                            'labels': {**loc_labels['labels'],
-                                       **context.user_data.configuration['metrics'][generated_metric_name].get(
-                                           'labels')},
-                        })
-
-                        # shove values
-                        dict_metric.setdefault('timestamps', []).append(timestamp)
-                        dict_metric.setdefault('values', []).append(
-                            generated_metric['value'])
-                        dict_metric.setdefault('alerts', []).append(
-                            generated_metric['alert'])
-                        dict_metric.setdefault('is_error', []).append(
-                            1 if generated_metric['is_error'] else 0)
-
-                        # Save metric
-                        dict_device[generated_metric_name] = dict_metric
+                        dict_device[generated_metric_name] = _create_metric_dict(context=context,
+                                                                                 device={'device': f'{company}/{location}/{device}'},
+                                                                                 dict_device=dict_device,
+                                                                                 labels=loc_labels,
+                                                                                 metric=generated_metric,
+                                                                                 metric_name=generated_metric_name,
+                                                                                 timestamp=timestamp)
                     # Save device
                     dict_loc[device] = dict_device
                 # Save location
@@ -204,14 +229,7 @@ def _generate_batch(context, start_timestamp, num_samples, interval):
             # Save company
             metrics_batch[company] = dict_cmp
 
-    # Translate dict to array
-    result = []
-    for company, locations in metrics_batch.items():
-        for location, devices in locations.items():
-            for device, metrics in devices.items():
-                result.append(metrics)
-
-    return result
+    return _metrics_batch_dict_to_array(metrics_batch=metrics_batch)
 
 
 def _send_metrics_batch_to_target(context, target, metrics_batch):

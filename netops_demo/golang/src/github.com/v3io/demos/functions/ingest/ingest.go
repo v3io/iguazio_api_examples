@@ -33,16 +33,16 @@ type userData struct {
 
 func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 	userData := context.UserData.(*userData)
-	parsedMetricsArray := [][]map[string]*metricSamples{}
+	parsedMetricBatchesArray := [][]map[string]*metricSamples{}
 
 	// try to parse the input body
-	if err := json.Unmarshal(event.GetBody(), &parsedMetricsArray); err != nil {
+	if err := json.Unmarshal(event.GetBody(), &parsedMetricBatchesArray); err != nil {
 		return nil, nuclio.NewErrBadRequest(err.Error())
 	}
 
 	// iterate over metrics
-	for _, sampleDates := range parsedMetricsArray {
-		for _, parsedMetrics := range  sampleDates {
+	for _, metricBatch := range parsedMetricBatchesArray {
+		for _, parsedMetrics := range  metricBatch {
 			for metricName, metricSamples := range parsedMetrics {
 
 				// all arrays must contain same # of samples
@@ -147,8 +147,7 @@ func ingestMetricSamples(context *nuclio.Context,
 	samples *metricSamples) error {
 	context.Logger.InfoWith("Ingesting",
 		"metricName", metricName,
-		"samples", len(samples.Timestamps),
-		"sample", samples)
+		"samples", len(samples.Timestamps))
 
 	var ingestErrGroup errgroup.Group
 
