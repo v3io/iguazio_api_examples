@@ -28,6 +28,7 @@ def generate(context, event):
 
 
 def init_context(context):
+    
     # initialize context structure
     for context_attr in ['state', 'configuration', 'manager']:
         setattr(context.user_data, context_attr, None)
