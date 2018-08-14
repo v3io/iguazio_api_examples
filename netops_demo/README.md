@@ -61,11 +61,10 @@ nuctl deploy \
   --platform local \
   netops-demo-ingest
 
-nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.1 \
+nuctl deploy --run-image iguaziodocker/netops-demo-py:latest \
 	--runtime python:3.6 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \
-	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
 	--platform local \
 	netops-demo-generate
 ```

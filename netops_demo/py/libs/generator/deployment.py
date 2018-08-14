@@ -30,14 +30,14 @@ class Deployment:
         while True:
             tick = {}
 
-            for c in self.companies:
-                tick[c.name] = {}
-                for i, l in enumerate(c.locations):
-                    tick[c.name][i] = {
+            for company in self.companies:
+                tick[company.name] = {}
+                for i, l in enumerate(company.locations):
+                    tick[company.name][i] = {
                         'location': l,
                         'devices': {}
                     }
-                    for j, d in enumerate(c.devices):
-                        tick[c.name][i]['devices'][j] = next(d.generate())
+                    for j, d in enumerate(company.devices):
+                        tick[company.name][i]['devices'][j] = next(d.generate())
 
             yield tick

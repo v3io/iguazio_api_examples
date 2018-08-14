@@ -28,7 +28,6 @@ def generate(context, event):
 
 
 def init_context(context):
-    
     # initialize context structure
     for context_attr in ['state', 'configuration', 'manager']:
         setattr(context.user_data, context_attr, None)
@@ -137,6 +136,8 @@ def _generate(context,
         # generate the batch
         metrics_batch = _generate_batch(context, start_timestamp, num_samples, interval)
 
+        # TODO: Break loop to send a request to ingestor for every METRIC inside device (Never ingest more than samples per batch)
+
         # send to target
         response = _send_metrics_batch_to_target(context, target, metrics_batch)
 
@@ -151,6 +152,7 @@ def _generate(context,
 
     if responses:
         return responses
+
 
 def _create_metric_dict(context, dict_device: dict,
                         device: dict,
@@ -175,6 +177,7 @@ def _create_metric_dict(context, dict_device: dict,
         1 if metric['is_error'] else 0)
 
     return dict_metric
+
 
 def _metrics_batch_dict_to_array(metrics_batch: dict):
     result = []
@@ -216,13 +219,14 @@ def _generate_batch(context, start_timestamp, num_samples, interval):
                     dict_device = dict_loc.setdefault(device, {})
 
                     for generated_metric_name, generated_metric in metrics.items():
-                        dict_device[generated_metric_name] = _create_metric_dict(context=context,
-                                                                                 device={'device': f'{company}/{location}/{device}'},
-                                                                                 dict_device=dict_device,
-                                                                                 labels=loc_labels,
-                                                                                 metric=generated_metric,
-                                                                                 metric_name=generated_metric_name,
-                                                                                 timestamp=timestamp)
+                        dict_device.update(_create_metric_dict(context=context,
+                                                               device={'device': f'{company}/{location}/{device}'},
+                                                               dict_device=dict_device,
+                                                               labels=loc_labels,
+                                                               metric=generated_metric,
+                                                               metric_name=generated_metric_name,
+                                                               timestamp=timestamp))
+
                     # Save device
                     dict_loc[device] = dict_device
                 # Save location
