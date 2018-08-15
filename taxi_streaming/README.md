@@ -1,8 +1,8 @@
 # Ride-Hailing Streaming Example
 
-Following is an outline and detailed code walkthrough of the **taxi_streaming** ride-hailing streaming example.
+This document describes the **taxi_streaming** ride-hailing streaming example, including detailed code walkthroughs.
 
-In this document
+#### In this document
 
 - [Overview](#overview)
 - [Running the Example](#running-the-example)
