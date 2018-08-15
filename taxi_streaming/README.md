@@ -16,7 +16,7 @@ In this document
 
 ### Use-Case Story
 
-The [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) example demonstrates a possible use case of the iguazio Unified Data Platform (**the platform**) by a ride-hailing company that provides services in the city of London and its surroundings.
+The [**taxi_streaming**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming) example demonstrates a possible use case of the Iguazio Unified Data Platform (**the platform**) by a ride-hailing company that provides services in the city of London and its surroundings.
 An application in the company's cars sends to the platform the cars' current GPS coordinates and the IDs of the drivers.
 In addition, the drivers report their current ride status (available, busy, or with a passenger).
 A producer application adds (ingests) the raw data into the platform as a continuous stream of data.
@@ -48,7 +48,7 @@ The sample demonstrates the following platform capabilities and API uses:
 - [Copying the Example to the Platform](#copying-the-example-to-the-platform)
 - [Running the Code](#running-the-code)
 
-> **Note:** Contact iguazio to schedule a live demo of the ride-hailing streaming sample, including an extra UI application that shows a heat map of the cars' current locations.
+> **Note:** Contact Iguazio to schedule a live demo of the ride-hailing streaming sample, including an extra UI application that shows a heat map of the cars' current locations.
 
 ### Copying the Example to the Platform
 
@@ -133,7 +133,7 @@ Following is an in-depth walkthrough of the sample's code files:
 ### create_random_drivers_data.py &mdash; Generate Random Drive Data
 
 The [**create_random_drivers_data.py**](https://github.com/v3io/iguazio_api_examples/tree/master/taxi_streaming/create_random_drivers_data.py) Python application generates randomized drivers data and saves it to a **drivers_data.csv** file, which will be added to the stream as part of the [stream-data ingestion](#code_walkthrough_stream_drivers_data_py).
-The randomized data generation is used to support a standalone sample that can be run as-is on any instance of the iguazio Unified Data Platform.
+The randomized data generation is used to support a standalone sample that can be run as-is on any instance of the Iguazio Unified Data Platform.
 The use of a CSV file was chosen because it's a straightforward implementation that's easy to demonstrate.
 Real-life scenarios will typically use a more efficient method to retrieve the actual stream data.
 
