@@ -122,7 +122,7 @@ Follow these steps to run the scripts and test the sample in less than two minut
 
 ## Code Walkthrough
 
-Following is an in-depth walkthrough of the sample's code files:
+Following are in-depth walkthroughs of the sample's code files:
 
 - [**create_random_drivers_data.py** &mdash; Generate Random Drive Data](#code_walkthrough_create_random_drivers_data_py)
 - [**create_drivers_stream.sh** &mdash; Create a Stream](#code_walkthrough_create_drivers_stream_sh)
@@ -135,7 +135,7 @@ Following is an in-depth walkthrough of the sample's code files:
 The [**create_random_drivers_data.py**](../taxi_streaming/create_random_drivers_data.py) Python application generates randomized drivers data and saves it to a **drivers_data.csv** file, which will be added to the stream as part of the [stream-data ingestion](#code_walkthrough_stream_drivers_data_py).
 The randomized data generation is used to support a standalone sample that can be run as-is on any instance of the Iguazio Unified Data Platform.
 The use of a CSV file was chosen because it's a straightforward implementation that's easy to demonstrate.
-Real-life scenarios will typically use a more efficient method to retrieve the actual stream data.
+Real-world scenarios will typically use a more efficient method to retrieve the actual stream data.
 
 > **Note:** You can use the **create_random_drivers_data.sh** bash script to run the **create_random_drivers_data.py** application, as explained in [Step 1](#sample_run_create_random_drivers_data_sh) of the "Running the Code" instructions.
 
@@ -271,11 +271,12 @@ A Spark `StreamingContext` object with a 10-seconds micro-batch interval is crea
 ssc = StreamingContext(spark.sparkContext, 10)
 ```
 
-The `V3IIOUtils.CreateDirectStream` method of the platform's Spark-Streaming Integration API is used to create an `InputDStream` Spark input-stream object (`stream`) that maps the Spark streaming context (`ssc`) to the **taxi_streaming_example/drivers_stream** platform stream (`STREAM_PATH`) of the "bigdata" container (`$CONTAINER_NAME`):
+The `V3IIOUtils.CreateDirectStream` method of the platform's Spark-Streaming Integration API is used to create an `InputDStream` Spark input-stream object (`stream`) that maps the Spark streaming context (`ssc`) to the **taxi_streaming_example/drivers_stream** platform stream (`STREAM_PATH`) of the "bigdata" container (`$CONTAINER_NAME`).
+The stream path is passed to the `createDirectStream` method within its `streamNames` parameter as a fully qualified path of the format <nobr>`v3io://<container name>/<stream-directory path within the container>`</nobr> (see `$V3IO_STREAM_PATH`):
 
 ```python
-v3ioConfig = {"container-alias": CONTAINER_NAME}
-stream = V3IOUtils.createDirectStream(ssc, [STREAM_PATH], v3ioConfig)
+v3ioConfig = {}
+stream = V3IOUtils.createDirectStream(ssc, v3ioConfig, [V3IO_STREAM_PATH])
 ```
 
 The Spark input stream (`stream`) is assigned the local `archive` data-consumption function as its Resilient Distributed Dataset (RDD) handler.
@@ -343,13 +344,14 @@ The `archive` stream-data consumption function, which is executed for each strea
 ## Cleanup
 
 After running the sample and testing the output, you can delete any of the runtime byproducts &mdash; such as stream and NoSQL tables in the container sample directory, or the **drivers_data.csv** file in the local application-node sample directory &mdash; as you would any other file or directory in the platform.
-For example, if the stream and NoSQL tables were saved to a **taxi_streaming_example** directory in the default "bigdata" container, and the platform's DFS mount directory is **/mnt/datalake**, you can use the following command to delete the **taxi_streaming_example** directory and its contents:
+For example, if the stream and NoSQL tables were saved to a **taxi_streaming_example** directory in the default "bigdata" container, you can use the following command to delete the **taxi_streaming_example** directory and its contents:
 ```sh
-rm -rf /mnt/datalake/bigdata/taxi_streaming_example/
+%sh
+hadoop fs -rm -r v3io//bigdata/taxi_streaming_example/
 ```
-Files in the container directory can also be deleted from the platform dashboard:
-select the container from the main **Data** screen, select the **Browse** tab, and use the **Delete** action-toolbar option to delete the selected files or directories.
+You can also select to delete the container directory from the dashboard:
+in the **Data > bigdata** page, select the **Browse** tab, select the directories that you want to delete, and then select the delete icon from the action toolbar.
 
-To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot use the `rm -rf` command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
+To assist you in the cleanup, especially for cases in which you don't have access to the dashboard and cannot run the file-system remove command, the sample includes a delete-stream bash shell script &mdash; **delete_stream.sh**.
 This script deletes the **taxi_streaming_example/drivers_stream** stream directory by using the `curl` CLI to issue recursive `XDELETE` commands.
 
