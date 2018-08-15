@@ -33,26 +33,31 @@ type userData struct {
 
 func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 	userData := context.UserData.(*userData)
-	parsedMetrics := map[string]*metricSamples{}
+	parsedMetricBatchesArray := [][]map[string]*metricSamples{}
 
 	// try to parse the input body
-	if err := json.Unmarshal(event.GetBody(), &parsedMetrics); err != nil {
+	if err := json.Unmarshal(event.GetBody(), &parsedMetricBatchesArray); err != nil {
 		return nil, nuclio.NewErrBadRequest(err.Error())
 	}
 
 	// iterate over metrics
-	for metricName, metricSamples := range parsedMetrics {
+	for _, metricBatch := range parsedMetricBatchesArray {
+		for _, parsedMetrics := range  metricBatch {
+			for metricName, metricSamples := range parsedMetrics {
 
-		// all arrays must contain same # of samples
-		if !allMetricSamplesFieldLenEqual(metricSamples) {
-			return nil, nuclio.NewErrBadRequest("Expected equal number of samples")
-		}
+				// all arrays must contain same # of samples
+				if !allMetricSamplesFieldLenEqual(metricSamples) {
+					return nil, nuclio.NewErrBadRequest("Expected equal number of samples")
+				}
 
-		// iterate over values and ingest them into all time series datastores
-		if err := ingestMetricSamples(context, userData, metricName, metricSamples); err != nil {
-			return nil, nuclio.NewErrBadRequest(err.Error())
+				// iterate over values and ingest them into all time series datastores
+				if err := ingestMetricSamples(context, userData, metricName, metricSamples); err != nil {
+					return nil, nuclio.NewErrBadRequest(err.Error())
+				}
+			}
 		}
 	}
+
 
 	return nil, nil
 }
