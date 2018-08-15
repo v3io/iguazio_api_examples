@@ -105,6 +105,12 @@ def _locations(context):
 
     return locations
 
+def _send_metrics_batch_if_needed(context, target, metrics_to_send, max_samples):
+    if len(metrics_to_send) == max_samples:
+        _send_metrics_batch_to_target(context, target, metrics_to_send)
+        return True
+    return False
+
 
 def _generate(context,
               start_timestamp=None,
@@ -136,16 +142,17 @@ def _generate(context,
         # generate the batch
         metrics_batch = _generate_batch(context, start_timestamp, num_samples, interval)
 
-        # TODO: Break loop to send a request to ingestor for every METRIC inside device (Never ingest more than samples per batch)
-
         # send to target
-        response = _send_metrics_batch_to_target(context, target, metrics_batch)
+        metrics = context.user_data.configuration['metrics'].keys()
+        for device in metrics_batch:
+            for metric in metrics:
+                response = _send_metrics_batch_to_target(context, target, {metric: device[metric]})
 
-        # if this is an event response, make sure it's OK
-        if type(response) is context.Response and response.status_code != 200:
-            return response
-        elif response is not None:
-            responses.append(response)
+                # if this is an event response, make sure it's OK
+                if type(response) is context.Response and response.status_code != 200:
+                    return response
+                elif response is not None:
+                    responses.append(response)
 
         num_samples_left -= num_samples
         start_timestamp += (num_samples * interval)

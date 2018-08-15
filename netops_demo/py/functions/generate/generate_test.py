@@ -133,14 +133,17 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                                                event=libs.nuclio_sdk.Event(path='/generate',
                                                                            body=request_body))
 
+        deployment = configuration['deployment']
+        metrics = deployment['companies'] * deployment['locations'] * deployment['devices'] * len(configuration['metrics'].keys())
+
         # make sure there's one batch
-        self.assertEqual(1, len(response))
+        self.assertEqual(metrics, len(response))
         response = response[0]
 
-        # for all metrics
-        for device in response:
-            for metric_name in configuration['metrics'].keys():
-                metric = device[metric_name]
+        # Test metric
+        for metric_name in configuration['metrics'].keys():
+            if metric_name in response.keys():
+                metric = response[metric_name]
 
                 # verify all configuration labels have been kept in tact
                 for label in configuration['metrics'][metric_name]['labels'].keys():
