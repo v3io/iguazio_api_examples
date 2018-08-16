@@ -1,0 +1,65 @@
+generate:
+  image:
+    repository: pavius/netops-demo-py
+    tag: 0.0.1
+    pullPolicy: Always
+  configuration: 
+    interval: 1
+    target: function:ingest
+    max_samples_per_batch: 720
+    metrics:
+      cpu_utilization:
+        labels:
+          ver: 1
+          unit: percent
+          target_type: gauge
+        metric:
+          mu: 75
+          sigma: 4
+          noise: 1
+          max: 100
+          min: 0
+        alerts:
+          threshold: 80
+          alert: HC
+      throughput:
+        labels:
+          ver: 1
+          unit: mbyte_sec
+          target_type: gauge
+        metric:
+          mu: 200
+          sigma: 50
+          noise: 50
+          max: 300
+          min: 0
+        alerts:
+          threshold: 30
+          alert: LT
+          type: true
+    error_scenarios:
+    - cpu_utilization: 0
+      throughput: 30
+      length: 80
+    errors: []
+    error_rate: 0.001
+
+ingest:
+  image:
+    repository: pavius/netops-demo-golang
+    tag: 0.0.1
+    pullPolicy: Always
+  tsdb:
+    enabled: true
+    url: http://10.0.0.1:8081/bigdata
+    username: myusername
+    password: mypassword
+    path: mytsdbpath
+  anodot:
+    enabled: false
+    url: https://api.anodot.com
+    token: some-token
+
+project:
+  name: netops
+  displayName: Network operation demo

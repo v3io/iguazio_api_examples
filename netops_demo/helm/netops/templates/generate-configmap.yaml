@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "generateName" . }}-config
+data:
+  configuration.json: |
+{{ toJson .Values.generate.configuration | indent 4 }}
