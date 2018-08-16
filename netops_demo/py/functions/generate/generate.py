@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import re
 
 import libs.generator.deployment
 import libs.nuclio_sdk
@@ -93,9 +94,11 @@ def _sites(context):
 
     sites = []
     for company in deployment.companies:
+        company_name_label = _company_name_to_label(company.name)
+
         for i, site_locations in enumerate(company.locations):
             sites.append({
-                'key': f'{company.name}/{i}',
+                'key': f'{company_name_label}/{i}',
                 'latitude': site_locations[0],
                 'longtitude': site_locations[1],
                 'name': f'{company.name}/{i}'
@@ -197,6 +200,9 @@ def _generate_emitters(context, start_timestamp, num_samples, interval):
         # iterate over companies
         for company_name, sites in generated_metrics.items():
 
+            # label friendly representation ('Duffy, Miller and Kelley' -> 'duffy_miller_and_kelley')
+            company_name = _company_name_to_label(company_name)
+
             # iterate over the company's sites
             for site_name, site_info in sites.items():
 
@@ -224,6 +230,7 @@ def _generate_emitters(context, start_timestamp, num_samples, interval):
 
 
 def _create_emitter(context, company_name, site_name, site_info, emitter_id):
+
     emitter = {
         'labels': {
             'longitude': site_info['location'][0],
@@ -263,3 +270,7 @@ def _send_emitters_to_target(context, target, metrics_batch):
         context.logger.info_with('Sending metrics batch', metrics_batch=metrics_batch)
     else:
         raise ValueError(f'Unknown target type {target}')
+
+
+def _company_name_to_label(company_name):
+    return re.sub(r'[^a-zA-Z -]', '', company_name).lower().replace(' ', '_').replace('-', '_')

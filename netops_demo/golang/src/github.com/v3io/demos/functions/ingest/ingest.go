@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"fmt"
+	"sort"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/v3io/demos/functions/ingest/anodot"
@@ -196,6 +197,11 @@ func ingestMetricSamplesToTSDB(context *nuclio.Context,
 			})
 		}
 	}
+
+	// sort the labels because. TODO: this should be in the adapter
+	sort.Slice(labels, func(lhs int, rhs int) bool {
+		return labels[lhs].Name < labels[rhs].Name
+	})
 
 	// TODO: can optimize as a pool of utils.Labels with `__name__` already set
 	for sampleIndex := 0; sampleIndex < len(samples.Timestamps); sampleIndex++ {
