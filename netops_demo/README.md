@@ -61,11 +61,10 @@ nuctl deploy \
   --platform local \
   netops-demo-ingest
 
-nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.1 \
+nuctl deploy --run-image iguaziodocker/netops-demo-py:latest \
 	--runtime python:3.6 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \
-	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
 	--platform local \
 	netops-demo-generate
 ```
@@ -104,11 +103,20 @@ echo '{
       "length": 80
     }
   ],
+  "deployment": {
+        "companies": 5,
+        "locations": 3,
+        "devices": 5,
+        "locations_list": {
+            "nw": "(51.520249, -0.071591)",
+            "se": "(51.490988, -0.188702)"
+        }
+    },
   "errors": [],
   "error_rate": 0.001,
   "interval": 1,
-  "target": "function:netops-demo-ingest",
-  "max_samples_per_batch": 720
+  "target": "response",
+  "max_samples_per_batch": 100
 }
 ' | http localhost:<function port>/configure
 ```
