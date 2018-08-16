@@ -20,8 +20,6 @@ def generate(context, event):
     elif event.path == '/sites':
         return _sites(context)
     elif event.path in ['/generate', '/', '']:
-        print(context.user_data.state)
-        print(context.user_data.configuration)
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
     else:
