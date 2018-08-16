@@ -217,13 +217,14 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                 self.assertEqual(called_interval, interval)
 
     def test_sites(self):
+        configuration = self._get_sample_configuration()
 
         # encode configuration into environment variable
-        os.environ['GENERATOR_CONFIGURATION'] = json.dumps(self._get_sample_configuration())
+        os.environ['GENERATOR_CONFIGURATION'] = json.dumps(configuration)
 
         # call start
         response = self._platform.call_handler(self._module.generate, event=libs.nuclio_sdk.Event(path='/sites'))
-        print(response)
+        self.assertEqual(configuration['deployment']['num_companies'] * configuration['deployment']['num_sites_per_company'], len(response))
 
     @staticmethod
     def _get_sample_configuration():
