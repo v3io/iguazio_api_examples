@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
+	"fmt"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/v3io/demos/functions/ingest/anodot"
@@ -26,6 +27,11 @@ type metricSamples struct {
 	Labels     map[string]interface{} `json:"labels,omitempty"`
 }
 
+type emitter struct {
+	Labels map[string]interface{} `json:"labels,omitempty"`
+	Metrics map[string]*metricSamples `json:"metrics,omitempty"`
+}
+
 type userData struct {
 	tsdbAppender tsdb.Appender
 	anodotAppender *anodot.Appender
@@ -33,27 +39,25 @@ type userData struct {
 
 func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 	userData := context.UserData.(*userData)
-	parsedMetricBatchesArray := [][]map[string]*metricSamples{}
+	emitters := map[string]*emitter{}
 
 	// try to parse the input body
-	if err := json.Unmarshal(event.GetBody(), &parsedMetricBatchesArray); err != nil {
+	if err := json.Unmarshal(event.GetBody(), &emitters); err != nil {
 		return nil, nuclio.NewErrBadRequest(err.Error())
 	}
 
-	// iterate over metrics
-	for _, metricBatch := range parsedMetricBatchesArray {
-		for _, parsedMetrics := range  metricBatch {
-			for metricName, metricSamples := range parsedMetrics {
+	// iterate over emitters
+	for _, emitterInfo := range emitters {
+		for metricName, metricSamples := range emitterInfo.Metrics {
 
-				// all arrays must contain same # of samples
-				if !allMetricSamplesFieldLenEqual(metricSamples) {
-					return nil, nuclio.NewErrBadRequest("Expected equal number of samples")
-				}
+			// all arrays must contain same # of samples
+			if !allMetricSamplesFieldLenEqual(metricSamples) {
+				return nil, nuclio.NewErrBadRequest("Expected equal number of samples")
+			}
 
-				// iterate over values and ingest them into all time series datastores
-				if err := ingestMetricSamples(context, userData, metricName, metricSamples); err != nil {
-					return nil, nuclio.NewErrBadRequest(err.Error())
-				}
+			// iterate over values and ingest them into all time series datastores
+			if err := ingestMetricSamples(context, userData, emitterInfo.Labels, metricName, metricSamples); err != nil {
+				return nil, nuclio.NewErrBadRequest(err.Error())
 			}
 		}
 	}
@@ -143,25 +147,27 @@ func allMetricSamplesFieldLenEqual(samples *metricSamples) bool {
 
 func ingestMetricSamples(context *nuclio.Context,
 	userData *userData,
+	emitterLabels map[string]interface{},
 	metricName string,
 	samples *metricSamples) error {
 	context.Logger.InfoWith("Ingesting",
+		"emitterLabels", emitterLabels,
 		"metricName", metricName,
-		"samples", len(samples.Timestamps))
+		"numSamples", len(samples.Timestamps))
 
 	var ingestErrGroup errgroup.Group
 
-	// ingest into TSDB if configure dto
+	// ingest into TSDB if configured to
 	if userData.tsdbAppender != nil {
 		ingestErrGroup.Go(func() error {
-			return ingestMetricSamplesToTSDB(context, userData.tsdbAppender, metricName, samples)
+			return ingestMetricSamplesToTSDB(context, userData.tsdbAppender, emitterLabels, metricName, samples)
 		})
 	}
 
 	// ingest into Anodot
 	if userData.anodotAppender != nil {
 		ingestErrGroup.Go(func() error {
-			return ingestMetricSamplesToAnodot(context, userData.anodotAppender, metricName, samples)
+			return ingestMetricSamplesToAnodot(context, userData.anodotAppender, emitterLabels, metricName, samples)
 		})
 	}
 
@@ -171,19 +177,38 @@ func ingestMetricSamples(context *nuclio.Context,
 
 func ingestMetricSamplesToTSDB(context *nuclio.Context,
 	tsdbAppender tsdb.Appender,
+	emitterLabels map[string]interface{},
 	metricName string,
 	samples *metricSamples) error {
 
-	// TODO: can optimize as a pool of utils.Labels with `__name__` already set
 	labels := utils.Labels{
 		{Name: "__name__", Value: metricName},
 	}
 
+	// labels = emitter labels + metric labels + __name__ for
+	for _, labelSource := range []map[string]interface{}{emitterLabels, samples.Labels} {
+
+		// iterate over label source and copy over
+		for labelKey, labelValue := range labelSource {
+			labels = append(labels, utils.Label{
+				Name: labelKey,
+				Value: fmt.Sprintf("%v", labelValue),
+			})
+		}
+	}
+
+	// TODO: can optimize as a pool of utils.Labels with `__name__` already set
 	for sampleIndex := 0; sampleIndex < len(samples.Timestamps); sampleIndex++ {
+		timestamp := int64(samples.Timestamps[sampleIndex]) * 1000
+
+		context.Logger.InfoWith("Ingesting sample to TSDB",
+			"timestamp", timestamp,
+			"labels", labels,
+			"value", samples.Values[sampleIndex])
 
 		// shove to appender
 		if _, err := tsdbAppender.Add(labels,
-			int64(samples.Timestamps[sampleIndex]),
+			timestamp,
 			samples.Values[sampleIndex]); err != nil {
 			return err
 		}
@@ -194,6 +219,7 @@ func ingestMetricSamplesToTSDB(context *nuclio.Context,
 
 func ingestMetricSamplesToAnodot(context *nuclio.Context,
 	anodotAppender *anodot.Appender,
+	emitterLabels map[string]interface{},
 	metricName string,
 	samples *metricSamples) error {
 

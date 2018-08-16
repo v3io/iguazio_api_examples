@@ -216,6 +216,15 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                 # interval must always be the same
                 self.assertEqual(called_interval, interval)
 
+    def test_sites(self):
+
+        # encode configuration into environment variable
+        os.environ['GENERATOR_CONFIGURATION'] = json.dumps(self._get_sample_configuration())
+
+        # call start
+        response = self._platform.call_handler(self._module.generate, event=libs.nuclio_sdk.Event(path='/sites'))
+        print(response)
+
     @staticmethod
     def _get_sample_configuration():
         return {

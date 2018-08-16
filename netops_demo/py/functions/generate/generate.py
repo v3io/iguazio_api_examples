@@ -91,16 +91,15 @@ def _sites(context):
     deployment = context.user_data.deployment
     context.logger.info_with('Sending list of sites', deployment=deployment)
 
-    sites = {}
-    for company in deployment['num_companies']:
-        for site_name, site_info in enumerate(company['num_sites_per_company']):
-            site_id = f'{company.name}/{site_name}'
-
-            sites[site_id] = {
-                'longitude': site_info['location'][0],
-                'latitute': site_info['location'][1],
-                'name': f'{site_name}'
-            }
+    sites = []
+    for company in deployment.companies:
+        for i, site_locations in enumerate(company.locations):
+            sites.append({
+                'key': f'{company.name}/{i}',
+                'latitude': site_locations[0],
+                'longtitude': site_locations[1],
+                'name': f'{company.name}/{i}'
+            })
 
     return sites
 
@@ -219,7 +218,7 @@ def _generate_emitters(context, start_timestamp, num_samples, interval):
                         emitter['metrics'][metric_name]['timestamps'].append(timestamp)
                         emitter['metrics'][metric_name]['values'].append(metric_info['value'])
                         emitter['metrics'][metric_name]['alerts'].append(metric_info['alert'])
-                        emitter['metrics'][metric_name]['is_error'].append(metric_info['is_error'])
+                        emitter['metrics'][metric_name]['is_error'].append(1 if metric_info['is_error'] else 0)
 
     return emitters
 
@@ -231,7 +230,7 @@ def _create_emitter(context, company_name, site_name, site_info, emitter_id):
             'latitute': site_info['location'][1],
             'company_id': company_name,
             'site_id': f'{company_name}/{site_name}',
-            'device_name': emitter_id
+            'device_id': emitter_id
         },
         'metrics': {}
     }
@@ -257,7 +256,7 @@ def _send_emitters_to_target(context, target, metrics_batch):
         # function:netops-ingest -> netops-ingest
         target_function = target.split(':')[1]
 
-        return context.platform.call_function(target_function, libs.nuclio_sdk.Event(body=metrics_batch))
+        context.platform.call_function(target_function, libs.nuclio_sdk.Event(body=metrics_batch))
     elif target == 'response':
         return metrics_batch
     elif target == 'log':
