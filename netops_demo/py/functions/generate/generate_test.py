@@ -18,9 +18,9 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
             'metrics': {},
             'error_scenarios': {},
             'deployment': {
-                'companies': 0,
-                'locations': 0,
-                'devices': 0
+                'num_companies': 0,
+                'num_sites_per_company': 0,
+                'num_devices_per_site': 0
             },
             'error_rate': 0,
             'state': 'generating'
@@ -57,9 +57,9 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
         configuration = {
             'metrics': {},
             'deployment': {
-                'companies': 0,
-                'locations': 0,
-                'devices': 0
+                'num_companies': 0,
+                'num_sites_per_company': 0,
+                'num_devices_per_site': 0
             },
             'error_scenarios': {},
             'error_rate': 0,
@@ -68,7 +68,7 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                 'start_timestamp': 100000,
                 'end_timestamp': 1000000,
                 'interval': 1,
-                'max_samples_per_batch': 1000
+                'max_samples_per_metric': 1000
             }
         }
 
@@ -99,17 +99,17 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
 
         self.assertEqual(self._platform.get_context(self._module.generate).user_data.state, 'idle')
 
-    def test_send_metrics_batch_to_target(self):
+    def test_send_emitters_to_target(self):
         context = libs.nuclio_sdk.Context(self._platform._logger, self._platform)
         metrics_batch = {'some': 'metrics'}
 
         with self.assertRaises(ValueError):
-            self._module._send_metrics_batch_to_target(context, 'unknown', metrics_batch)
+            self._module._send_emitters_to_target(context, 'unknown', metrics_batch)
 
-        response = self._module._send_metrics_batch_to_target(context, 'response', metrics_batch)
+        response = self._module._send_emitters_to_target(context, 'response', metrics_batch)
         self.assertEqual(response, metrics_batch)
 
-        self._module._send_metrics_batch_to_target(context, 'function:some-function', metrics_batch)
+        self._module._send_emitters_to_target(context, 'function:some-function', metrics_batch)
 
         # verify some-function was called
         name, sent_event = self._platform.get_call_function_call_args(0)
@@ -134,16 +134,22 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                                                                            body=request_body))
 
         deployment = configuration['deployment']
-        metrics = deployment['companies'] * deployment['locations'] * deployment['devices'] * len(configuration['metrics'].keys())
 
         # make sure there's one batch
-        self.assertEqual(metrics, len(response))
-        response = response[0]
+        self.assertEqual(1, len(response))
+        emitters = response[0]
 
-        # Test metric
+        # make sure there are the expected # of emitters
+        self.assertEqual(len(emitters), deployment['num_companies'] *
+                         deployment['num_sites_per_company'] *
+                         deployment['num_devices_per_site'])
+
+        # test emitter
         for metric_name in configuration['metrics'].keys():
-            if metric_name in response.keys():
-                metric = response[metric_name]
+
+            # iterate over all emitters (devices in this case)
+            for emitter_name, emitter_info in emitters.items():
+                metric = emitter_info['metrics'][metric_name]
 
                 # verify all configuration labels have been kept in tact
                 for label in configuration['metrics'][metric_name]['labels'].keys():
@@ -169,17 +175,17 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
         start_timestamp = 1000
         end_timestamp = 9500
         interval = 1
-        max_samples_per_batch = 1000
+        max_samples_per_metric = 1000
 
         request_body = {
             'start_timestamp': start_timestamp,
             'end_timestamp': end_timestamp,
             'interval': interval,
-            'max_samples_per_batch': max_samples_per_batch
+            'max_samples_per_metric': max_samples_per_metric
         }
 
         # patch _generate_batch so that we can see how _generate called it
-        with unittest.mock.patch('functions.generate.generate._generate_batch'):
+        with unittest.mock.patch('functions.generate.generate._generate_emitters'):
 
             # call generate (init context will initialize the configuration from env)
             response = self._platform.call_handler(self._module.generate,
@@ -188,24 +194,24 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
 
             # calculate some stuff
             total_num_samples = (end_timestamp - start_timestamp) / interval
-            expected_call_count = math.ceil(total_num_samples / max_samples_per_batch)
+            expected_call_count = math.ceil(total_num_samples / max_samples_per_metric)
 
             # assert # of times generate batch was called
-            self.assertEqual(functions.generate.generate._generate_batch.call_count, expected_call_count)
+            self.assertEqual(functions.generate.generate._generate_emitters.call_count, expected_call_count)
 
             # assert the arguments that were passed to it
-            for call_index, call_args in enumerate(functions.generate.generate._generate_batch.call_args_list):
+            for call_index, call_args in enumerate(functions.generate.generate._generate_emitters.call_args_list):
                 _, called_start_timestamp, called_num_samples, called_interval = call_args[0]
 
                 # assert start timestamp increments correctly each batch
                 self.assertEqual(called_start_timestamp,
-                                 start_timestamp + (call_index * (interval * max_samples_per_batch)))
+                                 start_timestamp + (call_index * (interval * max_samples_per_metric)))
 
                 # number of samples must be equal to max for everything except last
-                if call_index != (functions.generate.generate._generate_batch.call_count - 1):
-                    self.assertEqual(called_num_samples, max_samples_per_batch)
+                if call_index != (functions.generate.generate._generate_emitters.call_count - 1):
+                    self.assertEqual(called_num_samples, max_samples_per_metric)
                 else:
-                    self.assertEqual(called_num_samples, end_timestamp % max_samples_per_batch)
+                    self.assertEqual(called_num_samples, end_timestamp % max_samples_per_metric)
 
                 # interval must always be the same
                 self.assertEqual(called_interval, interval)
@@ -254,18 +260,18 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
             },
             'error_scenarios': [
                 {
-                    "cpu_utilization": 0,
-                    "throughput": 30,
-                    "length": 80
+                    'cpu_utilization': 0,
+                    'throughput': 30,
+                    'length': 80
                 },
             ],
             'deployment': {
-                'companies': 5,
-                'locations': 3,
-                'devices': 5,
-                'locations_list': {
-                    "nw": "(51.520249, -0.071591)",
-                    "se": "(51.490988, -0.188702)"
+                'num_companies': 5,
+                'num_sites_per_company': 3,
+                'num_devices_per_site': 5,
+                'site_locations_bounding_box': {
+                    'nw': '(51.520249, -0.071591)',
+                    'se': '(51.490988, -0.188702)'
                 }
             },
             'errors': [],
