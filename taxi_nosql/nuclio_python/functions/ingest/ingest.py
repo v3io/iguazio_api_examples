@@ -15,8 +15,7 @@ DRIVERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('DRIVERS_TABLE'))
 PASSENGERS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('PASSENGERS_TABLE'))
 CELLS_TABLE_PATH = CONTAINER_NAME + str(os.getenv('CELLS_TABLE'))
 
-# Set prefixes to be used in attribute names to identify the related record
-# type (driver or passenger)
+# Define record-type-dependent (driver/passenger) attribute-name prefixes
 DRIVER_PREFIX = 'drivers_'
 PASSENGER_PREFIX = 'passengers_'
 
@@ -32,13 +31,13 @@ def handler(context, event):
     # - Path to the drivers/passengers table
     # - Value of the item's primary-key attribute = the item's name
     # - Current-location cell ID
-    # - Attribute-name prefix for the record type (driver/passenger)
-    # - Path to the table item
-    # - Primary-key attribute name
+    # - Record-type-dependent (driver/passenger) attribute-name prefix
     table_path, key_value, cell_id, item_prefix = \
         _generate_data_from_input(event.body)
+    # Set the path to the table item
     item_path = table_path + key_value
-    key_name = item_prefix + "id"
+    # Set the primary-key attribute name (= the item's name)
+    key_name = "id"
 
     # Update the current and previous driver/passenger location information;
     # if the item doesn't already exist in the table, it will be created:
@@ -54,7 +53,7 @@ def handler(context, event):
         table_path,
         key_value,
         key_name,
-        f'''{key_name} = "{key_value}";
+        f'''{key_name} = {key_value};
             previous_cell_id = if_not_exists(current_cell_id, 0);
             current_cell_id = {cell_id};
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
@@ -96,8 +95,7 @@ def _generate_data_from_input(input_data_json):
     cell = s2sphere.CellId.from_lat_lng(p1).parent(15)
     cell_id = str(cell.id())
 
-    # Set the ID attribute-name prefix and the path to the relevant ingestion
-    # table based on the record type - driver or passenger
+    # Set the record-type-dependent attribute-name prefix and table path
     if record_type == 'driver':
         item_prefix = DRIVER_PREFIX
         table_path = DRIVERS_TABLE_PATH
@@ -106,13 +104,13 @@ def _generate_data_from_input(input_data_json):
         table_path = PASSENGERS_TABLE_PATH
 
     # Set the value of the item's primary-key attribute (= the item's name)
-    key_value = item_prefix + input_id
+    key_value = input_id
 
     # Return the generated data:
     # - Path to the drivers/passengers table
     # - Value of the item's primary-key attribute = the item's name
     # - Current-location cell ID
-    # - Attribute-name prefix for the record type ("drivers_"/"passengers_")
+    # - Record-type-dependent (driver/passenger) attribute-name prefix
     return table_path, key_value, cell_id, item_prefix
 
 
@@ -145,7 +143,7 @@ def _update_cells_table(context, item_path, item_prefix):
             count_attribute = item_prefix + 'count'
             # Set the name and value of the item's primary-key attribute
             key_name = "cell_id"
-            key_value = "cell_" + current_cell_id_val
+            key_value = current_cell_id_val
 
             # Increase the driver/passenger count for the current cell:
             # - Set the new-location cell item's primary key (name)
@@ -157,7 +155,7 @@ def _update_cells_table(context, item_path, item_prefix):
                 CELLS_TABLE_PATH,
                 key_value,
                 key_name,
-                f'''{key_name} = "{key_value}";
+                f'''{key_name} = {key_value};
                     {count_attribute}=if_not_exists({count_attribute},0)+1;
                 ''')
 
@@ -172,7 +170,7 @@ def _update_cells_table(context, item_path, item_prefix):
             # previous count is greater than zero, subtract one from this count
             if int(previous_cell_id_val) > 0:
                 # Set the name and value of the item's primary-key attribute
-                key_value = "cell_" + previous_cell_id_val
+                key_value = previous_cell_id_val
 
                 # Update the item
                 res = _webapi_updateitem(
@@ -237,13 +235,13 @@ def _webapi_updateitem(base_url, table_path, key_value, key_name, update_expr):
     url = os.path.join(base_url, table_path)
 
     # Construct the request's JSON body:
-    # - "Key" is set to the name of the item's primary-key attribute name,
-    #   which is also the item name (assigned automatically to the __name
-    #   system attribute).
-    # - "UpdateExpression" is an update-expression string that determines the
+    # - "Key" identifies is the item's primary-key attribute, which identifies
+    #   the item to update. The name of this attribute is also the item name,
+    #   which is automatically assigned to the __name system attribute.
+    # - "UpdateExpression" is an update-expression string that defines the
     #   item-attributes update logic.
     request_json = {
-        'Key': {key_name: {'S': key_value}},
+        'Key': {key_name: {'N': key_value}},
         'UpdateExpression': update_expr
     }
 
