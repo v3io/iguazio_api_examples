@@ -34,7 +34,7 @@ def handler(context, event):
     # - Current-location cell ID
     # - Attribute-name prefix for the record type (driver/passenger)
     # - Path to the table item
-    # - Attribute-name prefix for the record type ("drivers_"/"passengers_")
+    # - Primary-key attribute name
     table_path, key_value, cell_id, item_prefix = \
         _generate_data_from_input(event.body)
     item_path = table_path + key_value
