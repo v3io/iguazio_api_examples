@@ -105,7 +105,7 @@ def _generate_data_from_input(input_data_json):
         item_prefix = PASSENGER_PREFIX
         table_path = PASSENGERS_TABLE_PATH
 
-    # Set the path to the ingested driver/passenger table item (row)
+    # Set the value of the item's primary-key attribute (= the item's name)
     key_value = item_prefix + input_id
 
     # Return the generated data:
