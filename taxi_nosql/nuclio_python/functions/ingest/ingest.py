@@ -36,8 +36,9 @@ def handler(context, event):
         _generate_data_from_input(event.body)
     # Set the path to the table item
     item_path = table_path + key_value
-    # Set the primary-key attribute name (= the item's name)
+    # Set the primary-key attribute's name (= the item's name) and type
     key_name = "id"
+    key_type = "N"
 
     # Update the current and previous driver/passenger location information;
     # if the item doesn't already exist in the table, it will be created:
@@ -53,9 +54,10 @@ def handler(context, event):
         table_path,
         key_value,
         key_name,
+        key_type,
         f'''{key_name} = {key_value};
-            previous_cell_id = if_not_exists(current_cell_id, 0);
-            current_cell_id = {cell_id};
+            previous_cell_id = if_not_exists(current_cell_id, "0");
+            current_cell_id = "{cell_id}";
             change_cell_id_indicator = (previous_cell_id != current_cell_id);
         ''')
 
@@ -130,8 +132,8 @@ def _update_cells_table(context, item_path, item_prefix):
     # cell ID attributes from the retrieved driver/passenger table item
     attrs = response_json["Item"]
     change_cell_id_indicator_val = attrs["change_cell_id_indicator"]["BOOL"]
-    current_cell_id_val = attrs["current_cell_id"]["N"]
-    previous_cell_id_val = attrs["previous_cell_id"]["N"]
+    current_cell_id_val = attrs["current_cell_id"]["S"]
+    previous_cell_id_val = attrs["previous_cell_id"]["S"]
 
     # Check whether a cell update is needed: if the driver's or passenger's
     # cell has changed (as indicated by the value of the
@@ -141,9 +143,10 @@ def _update_cells_table(context, item_path, item_prefix):
             # Set the name of the cells-table count attribute to update, based
             # on the record type (driver/passenger)
             count_attribute = item_prefix + 'count'
-            # Set the name and value of the item's primary-key attribute
+            # Set the name, value, and type of the item's primary-key attribute
             key_name = "cell_id"
             key_value = current_cell_id_val
+            key_type = "S"
 
             # Increase the driver/passenger count for the current cell:
             # - Set the new-location cell item's primary key (name)
@@ -155,7 +158,8 @@ def _update_cells_table(context, item_path, item_prefix):
                 CELLS_TABLE_PATH,
                 key_value,
                 key_name,
-                f'''{key_name} = {key_value};
+                key_type,
+                f'''{key_name} = "{key_value}";
                     {count_attribute}=if_not_exists({count_attribute},0)+1;
                 ''')
 
@@ -229,7 +233,7 @@ def _webapi_getitem(base_url, path_in_url, exp_attrs):
 
 
 # Prepare and send an UpdateItem NoSQL Web API request
-def _webapi_updateitem(base_url, table_path, key_value, key_name, update_expr):
+def _webapi_updateitem(base_url, table_path, key_value, key_name, key_type, update_expr):
 
     # Set the request URL
     url = os.path.join(base_url, table_path)
@@ -241,8 +245,8 @@ def _webapi_updateitem(base_url, table_path, key_value, key_name, update_expr):
     # - "UpdateExpression" is an update-expression string that defines the
     #   item-attributes update logic.
     request_json = {
-        'Key': {key_name: {'N': key_value}},
-        'UpdateExpression': update_expr
+        "Key": {key_name: {key_type: key_value}},
+        "UpdateExpression": update_expr
     }
 
     # Set the request payload
