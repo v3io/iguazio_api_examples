@@ -19,5 +19,5 @@ For local installs, add `--platform local` to all of the following commands.
     ```sh
     nuctl deploy --path /xxx/taxi_nuclio/ingest.py -f /xxx/taxi_nuclio/ingest.yaml
     nuctl deploy --path /xxx/taxi_nuclio/generate_data.py -f /xxx/taxi_nuclio/generate_data.yaml
-   ```
+    ```
 
