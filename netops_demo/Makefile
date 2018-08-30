@@ -10,11 +10,11 @@ py:
 
 .PHONY: golang
 golang:
-	cd golang && docker build -f Dockerfile \
+	cd golang/src/github.com/v3io/demos && docker build \
 		--tag netops-demo-golang:$(NETOPS_TAG) \
 		--build-arg NUCLIO_BUILD_OFFLINE=true \
 		--build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos \
-		src/github.com/v3io/demos
+		.
 
 .PHONY: push
 push:
