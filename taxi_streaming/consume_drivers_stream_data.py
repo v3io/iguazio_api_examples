@@ -5,15 +5,16 @@ from v3io.spark.streaming import *
 # Data-container name
 CONTAINER_NAME = "bigdata"
 
-# Path to the taxi_streaming example directory within the container
+# Configure paths within the target-container directory:
+# Parent example directory
 EXAMPLE_PATH = "/taxi_streaming_example/"
-# NoSQL tables Path
+# Parent tables directory
 NOSQL_TABLES_PATH = "v3io://" + CONTAINER_NAME + EXAMPLE_PATH
-# Stream container-directory path
+# Stream directory
 STREAM_PATH = EXAMPLE_PATH + "drivers_stream"
-# NoSQL drivers-Data table path
+# NoSQL drivers-data table
 DRIVERS_TABLE_PATH = NOSQL_TABLES_PATH + "/drivers_table/" 
-# NoSQL drivers Ride-Status Summary Table Path
+# NoSQL drivers ride-status summary table
 DRIVERS_STATUS_SUMMARY_TABLE_PATH = NOSQL_TABLES_PATH + "/driver_status_summary_table/" 
 
 # Consume the stream data: read the data and save it to NoSQL tables
@@ -50,7 +51,7 @@ spark = SparkSession.builder \
 # Create a Spark streaming context with a 10-seconds micro-batch interval
 ssc = StreamingContext(spark.sparkContext, 10)
 
-# Do not set any configuration properties for the stream
+# Set the container identifier to the configured container name
 v3ioConfig = {"container-id": CONTAINER_NAME}
 
 # Map the platform stream to a Spark input stream using the platform's
