@@ -19,6 +19,8 @@ def generate(context, event):
         _stop(context)
     elif event.path == '/sites':
         return _sites(context)
+    elif event.path == '/devices':
+        return _devices(context)
     elif event.path in ['/generate', '/', '']:
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
@@ -104,6 +106,16 @@ def _sites(context):
 
     return sites
 
+def _devices(context):
+    deployment = context.user_data.deployment
+    context.logger.info_with('Sending list of devices', deployment=deployment)
+    devices = []
+    for company in deployment.companies:
+        for i, site_locations in enumerate(company.locations):
+            for j, device in company.devices:
+                devices.append(f'{company.name}/{i}/{j}')
+
+    return devices
 
 def _generate(context,
               start_timestamp=None,
