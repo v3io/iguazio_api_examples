@@ -149,10 +149,11 @@ if __name__ == '__main__':
     #f = csv.writer(open("C:\\Users\\ronenf\\Downloads\\test.csv", "w", newline=''))
         f.writerow(['company', 'location', 'lat', 'lon', 'device', 'metric', 'value', 'alert', 'is_error', 'timestamp'])
 
-        for i in range(1000):
+        for i in range(50000):
             #print(next(deployment.generate()))
             dep = next(deployment.generate())
             #print(dep)
+            timestamp += timedelta(milliseconds=1 * 100)
             for company, locations in dep.items():
                 for location,details in locations.items():
                     lat = details["location"][0]
@@ -164,4 +165,4 @@ if __name__ == '__main__':
                             is_error = values["is_error"]
                             #print(company,",",location,",",lat,",",lon,",",device,",",metric,",",val,",",alert,",",is_error)
                             f.writerow([company,location,lat,lon,device,metric,val,alert,is_error,unix_time_millis(timestamp)])
-                            timestamp += timedelta(milliseconds=1 * 100)
+                            #timestamp += timedelta(milliseconds=1 * 100)
