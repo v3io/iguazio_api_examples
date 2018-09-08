@@ -17,13 +17,13 @@ class Deployment:
         deployment_configuration = configuration['deployment']
         self.configuration = configuration
 
-        self.companies = [Company(num_devices=deployment_configuration['devices'],
-                             num_locations=deployment_configuration['locations'],
-                             within=deployment_configuration['locations_list'],
+        self.companies = [Company(num_devices=deployment_configuration['num_devices_per_site'],
+                             num_locations=deployment_configuration['num_sites_per_company'],
+                             within=deployment_configuration['site_locations_bounding_box'],
                              metrics=configuration['metrics'],
                              error_scenarios=configuration['error_scenarios'],
                              error_rate=configuration['error_rate']) for _ in
-                     range(deployment_configuration['companies'])]
+                     range(deployment_configuration['num_companies'])]
 
     def generate(self):
 

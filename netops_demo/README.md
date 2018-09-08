@@ -42,6 +42,11 @@ nuctl create project netops \
 	--platform local
 ```
 
+Create a Docker network, so that the functions can resolve each other's name to an IP address:
+```sh
+docker network create netops
+```
+
 Deploy the functions, substituting the following:
 * NETOPS_CONTAINER_URL: The Iguazio container URL (e.g. `http://10.0.0.1:8081/bigdata`)
 * NETOPS_CONTAINER_USERNAME: The Iguazio container username
@@ -51,7 +56,7 @@ Deploy the functions, substituting the following:
 
 ```sh
 nuctl deploy \
-  --run-image iguaziodocker/netops-demo-golang:0.0.1 \
+  --run-image iguaziodocker/netops-demo-golang:0.0.5 \
   --runtime golang \
   --handler main:Ingest \
   --project-name netops \
@@ -59,13 +64,15 @@ nuctl deploy \
   --data-bindings '{"db0": {"class": "v3io", "url": "$(NETOPS_CONTAINER_URL)", "secret": "NETOPS_CONTAINER_USERNAME:NETOPS_CONTAINER_PASSWORD"}}' \
   --env INGEST_V3IO_TSDB_PATH=NETOPS_TSDB_TABLE_NAME \
   --platform local \
+  --platform-config '{"attributes": {"network":"netops"}}' \
   netops-demo-ingest
 
-nuctl deploy --run-image iguaziodocker/netops-demo-py:latest \
+nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
 	--runtime python:3.6 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \
 	--platform local \
+  --platform-config '{"attributes": {"network":"netops"}}' \
 	netops-demo-generate
 ```
 
