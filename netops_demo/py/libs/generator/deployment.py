@@ -32,12 +32,12 @@ class Deployment:
 
             for company in self.companies:
                 tick[company.name] = {}
-                for i, l in enumerate(company.locations):
-                    tick[company.name][i] = {
-                        'location': l,
+                for l, location in enumerate(company.components.values()):
+                    tick[company.name][l] = {
+                        'location': location['location'],
                         'devices': {}
                     }
-                    for j, d in enumerate(company.devices):
-                        tick[company.name][i]['devices'][j] = next(d.generate())
+                    for d, device in enumerate(location['devices']):
+                        tick[company.name][l]['devices'][d] = next(device.generate())
 
             yield tick
