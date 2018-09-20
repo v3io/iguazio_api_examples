@@ -96,7 +96,7 @@ def _sites(context):
     for company in deployment.companies:
         company_name_label = _company_name_to_label(company.name)
 
-        for i, site_locations in enumerate(company.locations):
+        for i, site_locations in enumerate(company.locations.values()):
             sites.append({
                 'key': f'{company_name_label}/{i}',
                 'latitude': site_locations[0],
@@ -113,8 +113,8 @@ def _devices(context):
 
     devices = []
     for company in deployment.companies:
-        for i, site_locations in enumerate(company.locations):
-            for j, _ in company.devices:
+        for i, site_locations in company.components.items():
+            for j, x in enumerate(site_locations['devices']):
                 devices.append(f'{company.name}/{i}/{j}')
 
     return devices
