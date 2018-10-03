@@ -21,7 +21,6 @@ such restriction.
 package tsdbctl
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/v3io/v3io-tsdb/pkg/formatter"
@@ -54,7 +53,7 @@ func newQueryCommandeer(rootCommandeer *RootCommandeer) *queryCommandeer {
 	cmd := &cobra.Command{
 		Use:     "query name [flags]",
 		Aliases: []string{"get"},
-		Short:   "query time series metrics",
+		Short:   "query time series performance",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// if we got positional arguments
@@ -73,9 +72,9 @@ func newQueryCommandeer(rootCommandeer *RootCommandeer) *queryCommandeer {
 	cmd.Flags().StringVarP(&commandeer.filter, "filter", "f", "", "v3io query filter e.g. method=='get'")
 	cmd.Flags().StringVarP(&commandeer.last, "last", "l", "", "last min/hours/days e.g. 15m")
 	cmd.Flags().StringVarP(&commandeer.windows, "windows", "w", "", "comma separated list of overlapping windows")
-	cmd.Flags().StringVarP(&commandeer.functions, "aggregators", "a", "",
+	cmd.Flags().StringVarP(&commandeer.functions, "aggregates", "a", "",
 		"comma separated list of aggregation functions, e.g. count,avg,sum,min,max,stddev,stdvar,last,rate")
-	cmd.Flags().StringVarP(&commandeer.step, "step", "i", "", "interval step for aggregation functions")
+	cmd.Flags().StringVarP(&commandeer.step, "aggregation-interval", "i", "", "interval step for aggregation functions")
 
 	commandeer.cmd = cmd
 
@@ -129,8 +128,6 @@ func (qc *queryCommandeer) query() error {
 	qc.rootCommandeer.logger.DebugWith("Query", "from", from, "to", to, "name", qc.name,
 		"filter", qc.filter, "functions", qc.functions, "step", qc.step)
 
-	startTime := time.Now()
-
 	qry, err := qc.rootCommandeer.adapter.Querier(nil, from, to)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize Querier")
@@ -158,21 +155,12 @@ func (qc *queryCommandeer) query() error {
 		return errors.Wrap(err, "Select Failed")
 	}
 
-	if qc.output == "png" {
-		qc.rootCommandeer.logger.Debug("Drawing output png")
-		return formatter.MakePlot(set, "plot.png")
-	}
-
 	f, err := formatter.NewFormatter(qc.output, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to start formatter "+qc.output)
 	}
 
 	err = f.Write(qc.cmd.OutOrStdout(), set)
-	if err == nil {
-		fmt.Println("Query done, took ", time.Since(startTime))
-	}
 
 	return err
-
 }

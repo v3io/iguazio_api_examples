@@ -28,11 +28,6 @@ import (
 	"github.com/v3io/v3io-tsdb/pkg/utils"
 )
 
-func newSeriesSet(partition *partmgr.DBPartition, mint, maxt int64) *V3ioSeriesSet {
-
-	return &V3ioSeriesSet{mint: mint, maxt: maxt, partition: partition}
-}
-
 // holds the query result set
 type V3ioSeriesSet struct {
 	err        error
@@ -41,16 +36,18 @@ type V3ioSeriesSet struct {
 	iter       utils.ItemsCursor
 	mint, maxt int64
 	attrs      []string
-	chunkIds   []int
+	chunk0Time int64
 
-	interval   int64
-	nullSeries bool
-	overlapWin []int
-	aggrSeries *aggregate.AggregateSeries
-	aggrIdx    int
-	currSeries Series
-	aggrSet    *aggregate.AggregateSet
-	baseTime   int64
+	interval     int64
+	nullSeries   bool
+	overlapWin   []int
+	aggrSeries   *aggregate.AggregateSeries
+	aggrIdx      int
+	canAggregate bool
+	currSeries   Series
+	aggrSet      *aggregate.AggregateSet
+	noAggrLbl    bool
+	baseTime     int64
 }
 
 // Get relevant items & attributes from the DB, and create an iterator
@@ -64,10 +61,10 @@ func (s *V3ioSeriesSet) getItems(partition *partmgr.DBPartition, name, filter st
 	}
 	attrs := []string{"_lset", "_ooo", "_name", "_maxtime"}
 
-	if s.aggrSeries != nil && s.aggrSeries.CanAggregate(s.partition.AggrType()) && s.maxt-s.mint >= s.interval {
+	if s.aggrSeries != nil && s.canAggregate {
 		s.attrs = s.aggrSeries.GetAttrNames()
 	} else {
-		s.attrs, s.chunkIds = s.partition.Range2Attrs("v", s.mint, s.maxt)
+		s.attrs, s.chunk0Time = s.partition.Range2Attrs("v", s.mint, s.maxt)
 	}
 	attrs = append(attrs, s.attrs...)
 
@@ -105,7 +102,7 @@ func (s *V3ioSeriesSet) Next() bool {
 
 		s.nullSeries = false
 
-		if s.aggrSeries.CanAggregate(s.partition.AggrType()) && s.maxt-s.mint >= s.interval {
+		if s.canAggregate {
 
 			// create series from aggregation arrays (in DB) if the partition stored the desired aggregates
 			maxtUpdate := s.maxt
