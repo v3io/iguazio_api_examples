@@ -2,6 +2,7 @@ import os
 import time
 import json
 import re
+import pickle
 
 import libs.generator.deployment
 import libs.nuclio_sdk
@@ -21,6 +22,8 @@ def generate(context, event):
         return _sites(context)
     elif event.path == '/devices':
         return _devices(context)
+    elif event.path == '/predict':
+        return _predict(context, **(event.body or {}))
     elif event.path in ['/generate', '/', '']:
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
@@ -118,6 +121,18 @@ def _devices(context):
                 devices.append(f'{company.name}/{i}/{j}')
 
     return devices
+
+def _predict(context, ts=time.time()):
+    # TODO: Get feature vector from TSDB / KV
+
+    # TODO: Load Model
+    # model = pickle.load('netops.model')
+
+    # TODO: Predict
+
+    # TODO: Save prediction to TSDB / KV
+    return 0
+
 
 
 def _generate(context,

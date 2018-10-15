@@ -2,11 +2,12 @@ package ingest
 
 import (
 	"encoding/json"
-	"os"
-	"sync"
 	"fmt"
-	"sort"
 	"golang.org/x/sync/errgroup"
+	"os"
+	"sort"
+	"strconv"
+	"sync"
 
 	"github.com/v3io/demos/functions/ingest/anodot"
 
@@ -29,13 +30,14 @@ type metricSamples struct {
 }
 
 type emitter struct {
-	Labels map[string]interface{} `json:"labels,omitempty"`
+	Labels  map[string]interface{}    `json:"labels,omitempty"`
 	Metrics map[string]*metricSamples `json:"metrics,omitempty"`
 }
 
 type userData struct {
 	tsdbAppender tsdb.Appender
 	anodotAppender *anodot.Appender
+	kvAppender *v3io.Container
 }
 
 func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
@@ -63,7 +65,6 @@ func Ingest(context *nuclio.Context, event nuclio.Event) (interface{}, error) {
 		}
 	}
 
-
 	return nil, nil
 }
 
@@ -74,11 +75,13 @@ func InitContext(context *nuclio.Context) error {
 
 	// get configuration from env
 	tsdbAppenderPath := os.Getenv("INGEST_V3IO_TSDB_PATH")
+	kvAppenderPath := os.Getenv("INGEST_V3IO_KV_PATH")
 	anodotAppenderURL := os.Getenv("INGEST_ANODOT_URL")
 	anodotAppenderToken := os.Getenv("INGEST_ANODOT_TOKEN")
 
 	context.Logger.InfoWith("Initializing",
 		"tsdbAppenderPath", tsdbAppenderPath,
+		"kvAppenderPath", kvAppenderPath,
 		"anodotAppenderURL", anodotAppenderURL,
 		"anodotAppenderToken", anodotAppenderToken)
 
@@ -98,6 +101,10 @@ func InitContext(context *nuclio.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if kvAppenderPath != "" {
+		userData.kvAppender = context.DataBinding["db0"].(*v3io.Container)
 	}
 
 	// set user data into the context
@@ -172,6 +179,13 @@ func ingestMetricSamples(context *nuclio.Context,
 		})
 	}
 
+	// TODO: Ingest into KV
+	if userData.kvAppender != nil {
+		ingestErrGroup.Go(func() error {
+			return ingestMetricSamplesToKV(context, userData.kvAppender, emitterLabels, metricName, samples)
+		})
+	}
+
 	// wait and return composite error
 	return ingestErrGroup.Wait()
 }
@@ -192,7 +206,7 @@ func ingestMetricSamplesToTSDB(context *nuclio.Context,
 		// iterate over label source and copy over
 		for labelKey, labelValue := range labelSource {
 			labels = append(labels, utils.Label{
-				Name: labelKey,
+				Name:  labelKey,
 				Value: fmt.Sprintf("%v", labelValue),
 			})
 		}
@@ -223,6 +237,55 @@ func ingestMetricSamplesToTSDB(context *nuclio.Context,
 	return nil
 }
 
+func ingestMetricSamplesToKV(context *nuclio.Context,
+	kvContainer *v3io.Container,
+	emitterLabels map[string]interface{},
+	metricName string,
+	samples *metricSamples) error {
+
+	baseKVPath := os.Getenv("INGEST_V3IO_KV_PATH")
+	metricPath := baseKVPath + "/" + metricName
+	responseChannel := make(chan *v3io.Response, 1) // Only one response per PutItems
+
+	items := make(map[string]map[string]interface{}, len(samples.Timestamps))
+	for index, timestamp := range samples.Timestamps {
+		key := strconv.FormatInt(timestamp, 10) + "_" + emitterLabels["device"].(string)
+		items [key] = map[string]interface{}{
+			string("timestamp"): string(timestamp),
+			string("alert"):     string(samples.Alerts[index]),
+			string("IsError"): int(samples.IsError[index]),
+		}
+		for k, v := range emitterLabels {
+			items [key][k] = v
+		}
+	}
+
+	// TODO: Why Emitter Labels doesn't hold device ID? Only company name / site
+	_, PutItemErr := kvContainer.PutItems(&v3io.PutItemsInput{
+			Path:  metricPath,
+			Items: items},
+		context,
+		responseChannel)
+
+	if PutItemErr != nil {
+		context.Logger.ErrorWith("Failed to put kv alert", "err", PutItemErr)
+	}
+
+	resp := <-responseChannel
+	if resp.Error != nil {
+		context.Logger.ErrorWith("Failed to put kv alert", "err", resp.Error)
+	}
+
+	output := resp.Output.(*v3io.PutItemsOutput)
+	if !output.Success {
+		for key, error := range output.Errors {
+			context.Logger.ErrorWith("Failed to put kv alert: Key:", key, "Error:", error)
+		}
+	}
+
+	return nil
+}
+
 func ingestMetricSamplesToAnodot(context *nuclio.Context,
 	anodotAppender *anodot.Appender,
 	emitterLabels map[string]interface{},
@@ -237,8 +300,8 @@ func ingestMetricSamplesToAnodot(context *nuclio.Context,
 	for sampleIndex := 0; sampleIndex < len(samples.Timestamps); sampleIndex++ {
 		metrics = append(metrics, &anodot.Metric{
 			Properties: samples.Labels,
-			Timestamp: uint64(samples.Timestamps[sampleIndex]),
-			Value: samples.Values[sampleIndex],
+			Timestamp:  uint64(samples.Timestamps[sampleIndex]),
+			Value:      samples.Values[sampleIndex],
 		})
 	}
 

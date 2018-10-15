@@ -1,6 +1,8 @@
 ARG NUCLIO_TAG=0.5.8
 ARG NUCLIO_ARCH=amd64
 ARG NUCLIO_BASE_IMAGE=python:3.7
+ARG MODEL_LOCATION=10.80.1.51:8081/bigdata/netops.model
+ARG MODEL_FILE=netops.model
 
 # Supplies processor uhttpc, used for healthcheck
 FROM nuclio/uhttpc:0.0.1-amd64 as uhttpc
@@ -33,3 +35,6 @@ CMD [ "processor", "--config", "/etc/nuclio/config/processor/processor.yaml", "-
 
 # Install packages
 RUN cd /opt/nuclio && pip install -r requirements.txt
+
+# Download the model file and make it available locally
+RUN curl -L ${MODEL_LOCATION} -o ${MODEL_FILE}
