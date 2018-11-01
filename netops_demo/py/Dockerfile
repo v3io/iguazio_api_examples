@@ -1,8 +1,7 @@
 ARG NUCLIO_TAG=0.5.8
 ARG NUCLIO_ARCH=amd64
 ARG NUCLIO_BASE_IMAGE=python:3.7
-ARG MODEL_LOCATION=10.80.1.51:8081/bigdata/netops.model
-ARG MODEL_FILE=netops.model
+
 
 # Supplies processor uhttpc, used for healthcheck
 FROM nuclio/uhttpc:0.0.1-amd64 as uhttpc
@@ -12,6 +11,12 @@ FROM nuclio/handler-builder-python-onbuild:${NUCLIO_TAG}-${NUCLIO_ARCH} as proce
 
 # From the base image
 FROM ${NUCLIO_BASE_IMAGE}
+
+ARG MODEL_LOCATION_URL=http://192.168.224.49:8081/1/netops.model
+ARG MODEL_FILE=/tmp/model/netops.model
+
+ENV MODEL_FILE $MODEL_FILE
+ENV MODEL_LOCATION_URL $MODEL_LOCATION_URL
 
 # Copy required objects from the suppliers
 COPY --from=processor /home/nuclio/bin/processor /usr/local/bin/processor
@@ -34,7 +39,15 @@ HEALTHCHECK --interval=1s --timeout=3s CMD /usr/local/bin/uhttpc --url http://lo
 CMD [ "processor", "--config", "/etc/nuclio/config/processor/processor.yaml", "--platform-config", "/etc/nuclio/config/platform/platform.yaml" ]
 
 # Install packages
-RUN cd /opt/nuclio && pip install -r requirements.txt
+RUN echo "${MODEL_LOCATION_URL} && ${MODEL_FILE}"
 
-# Download the model file and make it available locally
-RUN curl -L ${MODEL_LOCATION} -o ${MODEL_FILE}
+## Download the model file and make it available locally
+RUN mkdir -p /tmp/model &&  cd /tmp/model && \
+curl -X GET \
+    ${MODEL_LOCATION_URL} \
+    -o ${MODEL_FILE} \
+    -H 'authorization: Basic aWd1YXppbzpkYXRhbEBrZSE=' \
+    -H 'cache-control: no-cache' \
+    -H 'content-type: application/json'
+
+RUN cd /opt/nuclio && pip install -r requirements.txt

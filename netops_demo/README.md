@@ -56,7 +56,7 @@ Deploy the functions, substituting the following:
 
 ```sh
 nuctl deploy \
-  --run-image iguaziodocker/netops-demo-golang:0.0.5 \
+  --run-image netops-demo-golang:0.0.5 \
   --runtime golang \
   --handler main:Ingest \
   --project-name netops \
