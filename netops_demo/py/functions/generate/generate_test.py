@@ -174,7 +174,7 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
 
         # call start
         response = self._platform.call_handler(self._module.generate, event=libs.nuclio_sdk.Event(path='/predict'))
-        self.assertEqual(response, '')
+        self.assertIsNotNone(response, 'Prediction is empty')
 
 
 

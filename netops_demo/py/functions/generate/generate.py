@@ -138,21 +138,26 @@ def _devices(context):
 
     return devices
 
-def _predict(context, ts=time.time()):
+def _predict(context):
     # Query Prometheus
     client = http.client.HTTPConnection(context.user_data.tsdb)
     metrics = sorted(list(context.user_data.deployment.configuration['metrics'].keys()))
     results = {}
     for metric in metrics:
-        # query = f'/api/v1/query?query=avg_over_time({metric}[1h])'
-        # client.request('GET', query)
-        # response = json.loads(client.getresponse().read().decode())
-        response = _get_prometheus_throughput_avg_1h()
+        query = f'/api/v1/query?query=avg_over_time({metric}[1h])'
+        client.request('GET', query)
+        response = json.loads(client.getresponse().read().decode())
+        # response = _get_prometheus_throughput_avg_1h()        # For testing purposes
         response = _extract_results_from_prometheus_response(response)
         for label in response:
             current_device_metric = _get_label_hash_from_response(label, metric)
             device_results = results.setdefault(list(current_device_metric.keys())[0], {})
-            device_results.update(list(current_device_metric.values())[0])
+
+            if device_results:
+                device_results = device_results.setdefault('metrics', {})
+                device_results.update(list(current_device_metric.values())[0]['metrics'])
+            else:
+                device_results.update(list(current_device_metric.values())[0])
 
     feature_vectors = {}
     for device, metrics in results.items():
@@ -160,12 +165,30 @@ def _predict(context, ts=time.time()):
 
     predictions = {}
     for device, X in feature_vectors.items():
-        predictions[device] = context.user_data.model.predict([X])[0]
+        predictions[device] = {
+            'label': {
+                **X['label']
+            },
+            'metric': {
+                'prediction': _predict_error(context, X['features'])
+            }
+        }
 
-    # TODO: Predict
+    # get the target from the request to generate or the configuration
+    target = context.user_data.configuration.get('target')
 
-    # TODO: Save prediction to TSDB / KV
-    return json.dumps(results)
+    # send the metrics towards the target
+    response = _send_emitters_to_target(context, target, predictions)
+
+    # if this is an event response, make sure it's OK
+    if target == 'response':
+        return response
+
+def _predict_error(context, features: list):
+    mode = 'test'
+    if mode == 'test':
+        return True
+    return context.user_data.model.predict(features)[0]
 
 def _extract_results_from_prometheus_response(response: dict):
     status = response.setdefault("status", "False")
@@ -174,17 +197,23 @@ def _extract_results_from_prometheus_response(response: dict):
     return response["data"]["result"]
 
 def _get_label_hash_from_response(response: dict, metric: str):
-    label = response['metric']['device_id']
+    keys_to_keep = ['company_id', 'device_id', 'latitute', 'longitude', 'site_id']
+    label_id = response['metric']['device_id']
+    labels = { key: response['metric'][key] for key in keys_to_keep }
     values = {
         metric: response['value'][1]
     }
 
     return {
-        label: values
+        label_id:{
+            'label': labels,
+            'metrics': values
+        }
     }
 
 def _create_feature_vector_from_metrics(metrics: dict):
-    return list(map(lambda metric: metric[1], sorted(metrics.items())))
+    metrics['features'] = list(map(lambda metric: metric[1], sorted(metrics['metrics'].items())))
+    return metrics
 
 def _generate(context,
               start_timestamp=None,
