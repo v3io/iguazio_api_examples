@@ -84,21 +84,44 @@ docker logs -f default-netops-demo-ingest
 By default, the generate function is idling - waiting for configuration. Let's configure it by POSTing the following configuration to `/configure`:
 ```
 echo '{
+  "interval": 1,
+  "target": "function:netops-demo-ingest",
+  "max_samples_per_batch": 720,
   "metrics": {
     "cpu_utilization": {
-      "labels": {"ver": 1, "unit": "percent", "target_type": "gauge"},
-      "metric": {"mu": 75, "sigma": 4, "noise": 1, "max": 100, "min": 0},
+      "labels": {
+        "ver": 1,
+        "unit": "percent",
+        "target_type": "gauge"
+      },
+      "metric": {
+        "mu": 75,
+        "sigma": 4,
+        "noise": 1,
+        "max": 100,
+        "min": 0
+      },
       "alerts": {
         "threshold": 80,
-        "alert": "Operation - Chassis CPU Utilization (StatReplace) exceed Critical threshold (80.0)"
+        "alert": "HC"
       }
     },
     "throughput": {
-      "labels": {"ver": 1, "unit": "mbyte_sec", "target_type": "gauge"},
-      "metric": {"mu": 200, "sigma": 50, "noise": 50, "max": 300, "min": 0},
+      "labels": {
+        "ver": 1,
+        "unit": "mbyte_sec",
+        "target_type": "gauge"
+      },
+      "metric": {
+        "mu": 200,
+        "sigma": 50,
+        "noise": 50,
+        "max": 300,
+        "min": 0
+      },
       "alerts": {
         "threshold": 30,
-        "alert": "Low Throughput (StatReplace) below threshold (3.0)",
+        "alert": "LT",
         "type": true
       }
     }
@@ -110,20 +133,19 @@ echo '{
       "length": 80
     }
   ],
-  "deployment": {
-        "companies": 5,
-        "locations": 3,
-        "devices": 5,
-        "locations_list": {
-            "nw": "(51.520249, -0.071591)",
-            "se": "(51.490988, -0.188702)"
-        }
-    },
-  "errors": [],
+  "errors": [
+
+  ],
   "error_rate": 0.001,
-  "interval": 1,
-  "target": "response",
-  "max_samples_per_batch": 100
+  "deployment": {
+    "num_companies": 3,
+    "num_sites_per_company": 5,
+    "num_devices_per_site": 10,
+    "site_locations_bounding_box": {
+      "nw": "(51.520249, -0.071591)",
+      "se": "(51.490988, -0.188702)"
+    }
+  }
 }
 ' | http localhost:<function port>/configure
 ```
