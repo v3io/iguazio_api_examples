@@ -1,5 +1,7 @@
 NETOPS_TAG := $(if $(NETOPS_TAG),$(NETOPS_TAG),latest)
 NETOPS_REGISTRY_URL := $(if $(NETOPS_REGISTRY_URL),$(NETOPS_REGISTRY_URL),iguaziodocker)
+MODEL_FILE := $(if $(MODEL_FILE), $(MODEL_FILE), None)
+MODEL_LOCATION_URL := $(if $(MODEL_LOCATION_URL), $(MODEL_LOCATION_URL), None)
 
 .PHONY: default
 default: golang py
@@ -7,6 +9,8 @@ default: golang py
 .PHONY: py
 py:
 	cd py && docker build . -t netops-demo-py:$(NETOPS_TAG)
+		--build-arg MODEL_FILE=$(MODEL_FILE)
+		--build-arg MODEL_LOCATION_URL=$(MODEL_LOCATION_URL)
 
 .PHONY: golang
 golang:

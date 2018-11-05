@@ -6,7 +6,7 @@ This demo generates network data and detects, predicts and visualizes anomalies.
 3. Nuclio functions that generate and ingest historical and real-time metric samples into the Iguazio TSDB and Anodot
 4. Grafana for visualization of metrics
 
-Setting up an Iguazio system including Grafana and Nuclio is out of the scope of this document. 
+Setting up an Iguazio system including Grafana and Nuclio is out of the scope of this document.
 
 ## Deploying and running the demo
 
@@ -20,7 +20,7 @@ helm install v3io-demo/netops \
   --set ingest.tsdb.path <tsdb path>
 ```
 
-> Note: To ingest into Anodot, add `--set ingest.anodot.token <anodot token>` to the above. 
+> Note: To ingest into Anodot, add `--set ingest.anodot.token <anodot token>` to the above.
 
 The demo is configured with defaults, as can be found in the values.yaml (#REF). You can download and modify these settings and pass `--values <values-file-path>` rather than the `--set` arguments above. The generator is configured through a Kubernetes configmap, so it comes up configured. All we need to do is start the generation, including a day of historical data:
 
@@ -56,7 +56,7 @@ Deploy the functions, substituting the following:
 
 ```sh
 nuctl deploy \
-  --run-image netops-demo-golang:latest \
+  --run-image iguaziodocker/netops-demo-golang:0.0.5 \
   --runtime golang \
   --handler main:Ingest \
   --project-name netops \
@@ -67,11 +67,12 @@ nuctl deploy \
   --platform-config '{"attributes": {"network":"netops"}}' \
   netops-demo-ingest
 
-nuctl deploy --run-image iguaziodocker/netops-demo-py:latest \
+nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
 	--runtime python:3.6 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \
 	--platform local \
+	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
   --platform-config '{"attributes": {"network":"netops"}}' \
 	netops-demo-generate
 ```
@@ -84,21 +85,44 @@ docker logs -f default-netops-demo-ingest
 By default, the generate function is idling - waiting for configuration. Let's configure it by POSTing the following configuration to `/configure`:
 ```
 echo '{
+  "interval": 1,
+  "target": "function:netops-demo-ingest",
+  "max_samples_per_batch": 720,
   "metrics": {
     "cpu_utilization": {
-      "labels": {"ver": 1, "unit": "percent", "target_type": "gauge"},
-      "metric": {"mu": 75, "sigma": 4, "noise": 1, "max": 100, "min": 0},
+      "labels": {
+        "ver": 1,
+        "unit": "percent",
+        "target_type": "gauge"
+      },
+      "metric": {
+        "mu": 75,
+        "sigma": 4,
+        "noise": 1,
+        "max": 100,
+        "min": 0
+      },
       "alerts": {
         "threshold": 80,
-        "alert": "Operation - Chassis CPU Utilization (StatReplace) exceed Critical threshold (80.0)"
+        "alert": "HC"
       }
     },
     "throughput": {
-      "labels": {"ver": 1, "unit": "mbyte_sec", "target_type": "gauge"},
-      "metric": {"mu": 200, "sigma": 50, "noise": 50, "max": 300, "min": 0},
+      "labels": {
+        "ver": 1,
+        "unit": "mbyte_sec",
+        "target_type": "gauge"
+      },
+      "metric": {
+        "mu": 200,
+        "sigma": 50,
+        "noise": 50,
+        "max": 300,
+        "min": 0
+      },
       "alerts": {
         "threshold": 30,
-        "alert": "Low Throughput (StatReplace) below threshold (3.0)",
+        "alert": "LT",
         "type": true
       }
     }
@@ -110,28 +134,27 @@ echo '{
       "length": 80
     }
   ],
-  "deployment": {
-        "companies": 5,
-        "locations": 3,
-        "devices": 5,
-        "locations_list": {
-            "nw": "(51.520249, -0.071591)",
-            "se": "(51.490988, -0.188702)"
-        }
-    },
-  "errors": [],
+  "errors": [
+
+  ],
   "error_rate": 0.001,
-  "interval": 1,
-  "target": "response",
-  "max_samples_per_batch": 100
+  "deployment": {
+    "num_companies": 3,
+    "num_sites_per_company": 5,
+    "num_devices_per_site": 10,
+    "site_locations_bounding_box": {
+      "nw": "(51.520249, -0.071591)",
+      "se": "(51.490988, -0.188702)"
+    }
+  }
 }
 ' | http localhost:<function port>/configure
 ```
 
-We can now start the generation, indicating that we want to prime the time series databases with 1 day worth of historical data:
+We can now start the generation:
 
 ```sh
-echo '{"num_historical_seconds": 86400}' | http localhost:<function port>/start
+http localhost:<function port>/start
 ```
 
 ## Developing
@@ -161,11 +184,10 @@ Modify the source code and build the images:
 NETOPS_TAG=latest make
 ```
 
-This will output `netops-demo-golang:latest` and `netops-demo-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md). 
-> The `golang` image contains the `ingest` and `query` functions. The `py` image contains the `generate` and `train` functions. By bunching together a few functions inside a single image we allow for easily sharing code without worrying about versioning, reducing the number of moving parts, etc. 
+This will output `netops-demo-golang:latest` and `netops-demo-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md).
+> The `golang` image contains the `ingest` and `query` functions. The `py` image contains the `generate` and `train` functions. By bunching together a few functions inside a single image we allow for easily sharing code without worrying about versioning, reducing the number of moving parts, etc.
 
 Push the images to your favorite Docker registry:
 ```
 NETOPS_TAG=latest NETOPS_REGISTRY_URL=mydockerhubaccount make push
 ```
-
