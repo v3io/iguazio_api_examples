@@ -151,10 +151,10 @@ echo '{
 ' | http localhost:<function port>/configure
 ```
 
-We can now start the generation, indicating that we want to prime the time series databases with 1 day worth of historical data:
+We can now start the generation:
 
 ```sh
-echo '{"num_historical_seconds": 86400}' | http localhost:<function port>/start
+http localhost:<function port>/start
 ```
 
 ## Developing
