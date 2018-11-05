@@ -26,7 +26,7 @@ def generate(context, event):
     elif event.path == '/devices':
         return _devices(context)
     elif event.path == '/predict':
-        return _predict(context, **(event.body or {}))
+        return _predict(context)
     elif event.path in ['/generate', '/', '']:
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
