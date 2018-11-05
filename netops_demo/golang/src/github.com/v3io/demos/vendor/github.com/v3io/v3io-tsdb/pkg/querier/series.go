@@ -44,7 +44,7 @@ type V3ioSeries struct {
 
 func (s *V3ioSeries) Labels() utils.Labels { return s.lset }
 
-// get the unique series key for sorting
+// Get the unique series key for sorting
 func (s *V3ioSeries) GetKey() uint64 {
 	if s.hash == 0 {
 		s.hash = s.lset.Hash()
@@ -54,7 +54,7 @@ func (s *V3ioSeries) GetKey() uint64 {
 
 func (s *V3ioSeries) Iterator() SeriesIterator { return s.iter }
 
-// initialize the label set from _lset & name attributes
+// Initialize the label set from _lset and _name attributes
 func initLabels(set *V3ioSeriesSet) utils.Labels {
 	name, nok := set.iter.GetField("_name").(string)
 	if !nok {
@@ -65,7 +65,7 @@ func initLabels(set *V3ioSeriesSet) utils.Labels {
 		lsetAttr = "UNKNOWN"
 	}
 	if !lok || !nok {
-		set.logger.Error("Error in initLabels, bad field values")
+		set.logger.Error("Error in initLabels; bad field values.")
 	}
 
 	lset := utils.Labels{utils.Label{Name: "__name__", Value: name}}
@@ -81,7 +81,7 @@ func initLabels(set *V3ioSeriesSet) utils.Labels {
 	return lset
 }
 
-// initialize the series from value metadata & attributes
+// Initialize the series from values, metadata, and attributes
 func (s *V3ioSeries) initSeriesIter() {
 
 	maxt := s.set.maxt
@@ -91,28 +91,30 @@ func (s *V3ioSeries) initSeriesIter() {
 	}
 
 	newIterator := v3ioSeriesIterator{
-		mint: s.set.mint, maxt: maxt, chunkTime: s.set.partition.TimePerChunk(),
-		isCyclic: s.set.partition.IsCyclic()}
+		mint: s.set.mint, maxt: maxt}
 	newIterator.chunks = []chunkenc.Chunk{}
+	newIterator.chunksMax = []int64{}
 
-	// create and init chunk encoder per chunk blob
-	for _, attr := range s.set.attrs {
+	// Create and initialize a chunk encoder per chunk blob
+	for i, attr := range s.set.attrs {
 		values := s.set.iter.GetField(attr)
 
 		if values != nil {
 			bytes := values.([]byte)
-			chunk, err := chunkenc.FromData(chunkenc.EncXOR, bytes, 0)
+			chunk, err := chunkenc.FromData(s.set.logger, chunkenc.EncXOR, bytes, 0)
 			if err != nil {
 				s.set.logger.ErrorWith("Error reading chunk buffer", "Lset", s.lset, "err", err)
 			} else {
 				newIterator.chunks = append(newIterator.chunks, chunk)
+				newIterator.chunksMax = append(newIterator.chunksMax,
+					s.set.chunk0Time+int64(i+1)*s.set.partition.TimePerChunk()-1)
 			}
 		}
 
 	}
 
 	if len(newIterator.chunks) == 0 {
-		// if there is no data, create a null iterator
+		// If there's no data, create a null iterator
 		s.iter = &nullSeriesIterator{}
 	} else {
 		newIterator.iter = newIterator.chunks[0].Iterator()
@@ -120,47 +122,60 @@ func (s *V3ioSeries) initSeriesIter() {
 	}
 }
 
-// chunk list series iterator
+// Chunk-list series iterator
 type v3ioSeriesIterator struct {
 	mint, maxt int64 // TBD per block
 	err        error
-	isCyclic   bool
 
-	chunks     []chunkenc.Chunk
+	chunks []chunkenc.Chunk
+
 	chunkIndex int
-	chunkTime  int64
+	chunksMax  []int64
 	iter       chunkenc.Iterator
 }
 
-// advance the iterator to the specified chunk and time
+// Advance the iterator to the specified chunk and time
 func (it *v3ioSeriesIterator) Seek(t int64) bool {
 
-	// Seek time is after the max time in object
+	// Seek time is after the item's end time (maxt)
 	if t > it.maxt {
 		return false
 	}
 
-	// Seek to the first valid value after t.
+	// Seek to the first valid value after t
 	if t < it.mint {
 		t = it.mint
 	}
 
+	// Check the first element
+	t0, _ := it.iter.At()
+	if t0 > it.maxt {
+		return false
+	}
+	if t <= t0 {
+		return true
+	}
+
 	for {
 		if it.iter.Next() {
-			t0, _ := it.At()
-			if (t > t0+int64(it.chunkTime)) || (t0 >= it.maxt && it.isCyclic) {
-				// this chunk is too far behind, move to next
+			t0, _ := it.iter.At()
+			if t0 > it.maxt {
+				return false
+			}
+			if t > it.chunksMax[it.chunkIndex] {
+				// This chunk is too far behind; move to the next chunk or
+				// Return false if it's the last chunk
 				if it.chunkIndex == len(it.chunks)-1 {
 					return false
 				}
 				it.chunkIndex++
 				it.iter = it.chunks[it.chunkIndex].Iterator()
 			} else if t <= t0 {
-				// this chunk contains data on or after t
+				// The cursor (t0) is either on t or just passed t
 				return true
 			}
 		} else {
-			// End of chunk, move to next or return if last
+			// End of chunk; move to the next chunk or return if last
 			if it.chunkIndex == len(it.chunks)-1 {
 				return false
 			}
@@ -170,7 +185,7 @@ func (it *v3ioSeriesIterator) Seek(t int64) bool {
 	}
 }
 
-// move to the next iterator item
+// Move to the next iterator item
 func (it *v3ioSeriesIterator) Next() bool {
 	if it.iter.Next() {
 		t, _ := it.iter.At()
@@ -185,9 +200,7 @@ func (it *v3ioSeriesIterator) Next() bool {
 		if t <= it.maxt {
 			return true
 		}
-		if !it.isCyclic {
-			return false
-		}
+		return false
 	}
 
 	if err := it.iter.Err(); err != nil {
@@ -202,25 +215,29 @@ func (it *v3ioSeriesIterator) Next() bool {
 	return it.Next()
 }
 
-// read the time & value at the current location
+// Read the time and value at the current location
 func (it *v3ioSeriesIterator) At() (t int64, v float64) { return it.iter.At() }
 
 func (it *v3ioSeriesIterator) Err() error { return it.iter.Err() }
 
-// Aggregation (count, avg, sum, ..) series and iterator
+// Aggregates (count, avg, sum, ..) series and iterator
 
 func NewAggrSeries(set *V3ioSeriesSet, aggr aggregate.AggrType) *V3ioSeries {
 	newSeries := V3ioSeries{set: set}
-	lset := append(initLabels(set), utils.Label{Name: "Aggregator", Value: aggr.String()})
+	lset := initLabels(set)
+	if !set.noAggrLbl {
+		lset = append(lset, utils.Label{Name: aggregate.AggregateLabel, Value: aggr.String()})
+	}
 	newSeries.lset = lset
 
 	if set.nullSeries {
 		newSeries.iter = &nullSeriesIterator{}
 	} else {
 
-		// `set`, the thing this iterator "iterates" over is stateful - it holds a "current" set and aggrSet.
-		// this means we need to copy all the stateful things we need into the iterator (e.g. aggrSet) so that
-		// when it's evaluated, it'll hold the proper pointer
+		// `set` - the iterator "iterates" over stateful data - it holds a
+		// "current" set and aggrSet. This requires copying all the required
+		// stateful data into the iterator (e.g., aggrSet) so that when it's
+		// evaluated it will hold the proper pointer.
 		newSeries.iter = &aggrSeriesIterator{
 			set:      set,
 			aggrSet:  set.aggrSet,
@@ -240,10 +257,10 @@ type aggrSeriesIterator struct {
 	err      error
 }
 
-// advance iterator to time t
+// Advance an iterator to the specified time (t)
 func (s *aggrSeriesIterator) Seek(t int64) bool {
 	if t <= s.set.baseTime {
-		s.index = 0
+		s.index = s.getNextValidCell(-1)
 		return true
 	}
 
@@ -255,17 +272,20 @@ func (s *aggrSeriesIterator) Seek(t int64) bool {
 	return true
 }
 
-// advance to the next time interval/bucket
+// Advance an iterator to the next time interval/bucket
 func (s *aggrSeriesIterator) Next() bool {
-	if s.index >= s.aggrSet.GetMaxCell() {
-		return false
-	}
-
-	s.index++
-	return true
+	// Advance the index to the next non-empty cell
+	s.index = s.getNextValidCell(s.index)
+	return s.index <= s.aggrSet.GetMaxCell()
 }
 
-// return the time & value at the current bucket
+func (s *aggrSeriesIterator) getNextValidCell(from int) (nextIndex int) {
+	for nextIndex = from + 1; nextIndex <= s.aggrSet.GetMaxCell() && !s.aggrSet.HasData(nextIndex); nextIndex++ {
+	}
+	return
+}
+
+// Return the time and value at the current bucket
 func (s *aggrSeriesIterator) At() (t int64, v float64) {
 	val, _ := s.aggrSet.GetCellValue(s.aggrType, s.index)
 	return s.aggrSet.GetCellTime(s.set.baseTime, s.index), val
@@ -273,7 +293,7 @@ func (s *aggrSeriesIterator) At() (t int64, v float64) {
 
 func (s *aggrSeriesIterator) Err() error { return s.err }
 
-// null series iterator
+// Null-series iterator
 type nullSeriesIterator struct {
 	err error
 }

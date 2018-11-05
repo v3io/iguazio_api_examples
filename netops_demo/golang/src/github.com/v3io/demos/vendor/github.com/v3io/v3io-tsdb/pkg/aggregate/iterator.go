@@ -28,7 +28,7 @@ import (
 )
 
 type AggregateSeries struct {
-	colName        string     // cloumn name ("v" in timeseries)
+	colName        string     // column name ("v" in timeseries)
 	functions      []AggrType // list of aggregation functions to return (count, avg, sum, ..)
 	aggrMask       AggrType   // the sum of aggregates (or between all aggregates)
 	rollupTime     int64      // time per bucket (cell in the array)
@@ -52,6 +52,11 @@ func NewAggregateSeries(functions, col string, buckets int, interval, rollupTime
 		aggrList = append(aggrList, aggr)
 	}
 
+	// Always have count Aggregate by default
+	if aggrMask != 0 {
+		aggrMask |= aggrTypeCount
+	}
+
 	newAggregateSeries := AggregateSeries{
 		aggrMask:       aggrMask,
 		functions:      aggrList,
@@ -66,12 +71,14 @@ func NewAggregateSeries(functions, col string, buckets int, interval, rollupTime
 }
 
 func (as *AggregateSeries) CanAggregate(partitionAggr AggrType) bool {
-	// keep only real aggregators
+	// keep only real aggregates
 	aggrMask := 0x7f & as.aggrMask
-	// make sure the DB has all the aggregators we need (on bits in the mask)
-	// and that the requested interval is greater/eq to aggregator resolution and is an even divisor
+	// make sure the DB has all the aggregates we need (on bits in the mask)
+	// and that the requested interval is greater/eq to aggregate resolution and is an even divisor
+	// if interval and rollup are not even divisors we need higher resolution (3x) to smooth the graph
+	// when we add linear/spline graph projection we can reduce back to 1x
 	return ((aggrMask & partitionAggr) == aggrMask) &&
-		as.interval >= as.rollupTime && (as.interval%as.rollupTime == 0)
+		as.interval >= as.rollupTime && (as.interval%as.rollupTime == 0 || as.interval/as.rollupTime > 3)
 }
 
 func (as *AggregateSeries) GetAggrMask() AggrType {
@@ -93,7 +100,7 @@ func (as *AggregateSeries) toAttrName(aggr AggrType) string {
 func (as *AggregateSeries) GetAttrNames() []string {
 	var names []string
 
-	for _, aggr := range rawAggregators {
+	for _, aggr := range rawAggregates {
 		if aggr&as.aggrMask != 0 {
 			names = append(names, as.toAttrName(aggr))
 		}
@@ -115,7 +122,7 @@ func (as *AggregateSeries) NewSetFromAttrs(
 		maxAligned = (maxt / as.interval) * as.interval
 	}
 
-	for _, aggr := range rawAggregators {
+	for _, aggr := range rawAggregates {
 		if aggr&as.aggrMask != 0 {
 			attrBlob, ok := (*attrs)[as.toAttrName(aggr)]
 			if !ok {
@@ -174,14 +181,9 @@ func (as *AggregateSeries) NewSetFromChunks(length int) *AggregateSet {
 	newAggregateSet := AggregateSet{length: length, interval: as.interval, overlapWin: as.overlapWindows}
 	dataArrays := map[AggrType][]float64{}
 
-	for _, aggr := range rawAggregators {
+	for _, aggr := range rawAggregates {
 		if aggr&as.aggrMask != 0 {
 			dataArrays[aggr] = make([]float64, length, length) // TODO: len/capacity & reuse (pool)
-			if aggr == aggrTypeMax || aggr == aggrTypeMin || aggr == aggrTypeLast {
-				for i := 0; i < length; i++ {
-					dataArrays[aggr][i] = math.NaN()
-				}
-			}
 		}
 	}
 
@@ -238,10 +240,6 @@ func (as *AggregateSet) mergeArrayCell(aggr AggrType, cell int, val uint64) {
 	}
 }
 
-func isValidValue(v float64) bool {
-	return !(math.IsNaN(v) || math.IsInf(v, 1) || math.IsInf(v, -1))
-}
-
 func isValidCell(cellIndex int, aSet *AggregateSet) bool {
 	return cellIndex >= 0 &&
 		cellIndex < aSet.length
@@ -262,11 +260,11 @@ func (as *AggregateSet) updateCell(aggr AggrType, cell int, val float64) {
 	case aggrTypeSqr:
 		as.dataArrays[aggr][cell] += val * val
 	case aggrTypeMin:
-		if math.IsNaN(as.dataArrays[aggr][cell]) || val < as.dataArrays[aggr][cell] {
+		if !as.HasData(cell) || val < as.dataArrays[aggr][cell] {
 			as.dataArrays[aggr][cell] = val
 		}
 	case aggrTypeMax:
-		if math.IsNaN(as.dataArrays[aggr][cell]) || val > as.dataArrays[aggr][cell] {
+		if !as.HasData(cell) || val > as.dataArrays[aggr][cell] {
 			as.dataArrays[aggr][cell] = val
 		}
 	case aggrTypeLast:
@@ -281,20 +279,20 @@ func (as *AggregateSet) GetCellValue(aggr AggrType, cell int) (float64, bool) {
 		return math.NaN(), false
 	}
 
-	dependsOnSumAndCount := aggr == aggrTypeStddev || aggr == aggrTypeStdvar || aggr == aggrTypeAvg
+	dependsOnSum := aggr == aggrTypeStddev || aggr == aggrTypeStdvar || aggr == aggrTypeAvg
 	dependsOnSqr := aggr == aggrTypeStddev || aggr == aggrTypeStdvar
 	dependsOnLast := aggr == aggrTypeLast || aggr == aggrTypeRate
 
 	// return undefined result one dependant fields is missing
-	if (dependsOnSumAndCount && !(isValidValue(as.dataArrays[aggrTypeSum][cell]) && isValidValue(as.dataArrays[aggrTypeCount][cell]))) ||
-		(dependsOnSqr && !isValidValue(as.dataArrays[aggrTypeSqr][cell])) ||
-		(dependsOnLast && !isValidValue(as.dataArrays[aggrTypeLast][cell])) {
+	if (dependsOnSum && utils.IsUndefined(as.dataArrays[aggrTypeSum][cell])) ||
+		(dependsOnSqr && utils.IsUndefined(as.dataArrays[aggrTypeSqr][cell]) ||
+			(dependsOnLast && utils.IsUndefined(as.dataArrays[aggrTypeLast][cell]))) {
 		return math.NaN(), false
 	}
 
 	// if no samples in this bucket the result is undefined
 	var cnt float64
-	if dependsOnSumAndCount {
+	if dependsOnSum {
 		cnt = as.dataArrays[aggrTypeCount][cell]
 		if cnt == 0 {
 			return math.NaN(), false
@@ -343,4 +341,9 @@ func (as *AggregateSet) Clear() {
 	for aggr := range as.dataArrays {
 		as.dataArrays[aggr] = as.dataArrays[aggr][:0]
 	}
+}
+
+// Check if cell has data. Assumes that count is always present
+func (as *AggregateSet) HasData(cell int) bool {
+	return as.dataArrays[aggrTypeCount][cell] > 0
 }

@@ -4,24 +4,36 @@ import (
 	"context"
 	"fmt"
 	"github.com/nuclio/logger"
+	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/pkg/aggregate"
 	"github.com/v3io/v3io-tsdb/pkg/appender"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/querier"
 	"github.com/v3io/v3io-tsdb/pkg/tsdb"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"strings"
 )
 
 type V3ioPromAdapter struct {
-	db *tsdb.V3ioAdapter
+	db     *tsdb.V3ioAdapter
+	logger logger.Logger
 }
 
 func NewV3ioProm(cfg *config.V3ioConfig, container *v3io.Container, logger logger.Logger) (*V3ioPromAdapter, error) {
 
+	if logger == nil {
+		newLogger, err := utils.NewLogger(cfg.LogLevel)
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to initialize logger.")
+		}
+		logger = newLogger
+	}
+
 	adapter, err := tsdb.NewV3ioAdapter(cfg, container, logger)
-	newAdapter := V3ioPromAdapter{db: adapter}
+	newAdapter := V3ioPromAdapter{db: adapter, logger: logger.GetChild("v3io-prom-adapter")}
 	return &newAdapter, err
 }
 
@@ -45,42 +57,57 @@ func (a *V3ioPromAdapter) Close() error {
 
 func (a *V3ioPromAdapter) Querier(_ context.Context, mint, maxt int64) (storage.Querier, error) {
 	v3ioQuerier, err := a.db.Querier(nil, mint, maxt)
-	querier := V3ioPromQuerier{q: v3ioQuerier}
-	return &querier, err
+	promQuerier := V3ioPromQuerier{v3ioQuerier: v3ioQuerier, logger: a.logger.GetChild("v3io-prom-query")}
+	return &promQuerier, err
 }
 
 type V3ioPromQuerier struct {
-	q *querier.V3ioQuerier
+	v3ioQuerier *querier.V3ioQuerier
+	logger      logger.Logger
 }
 
 // Select returns a set of series that matches the given label matchers.
-func (q *V3ioPromQuerier) Select(params *storage.SelectParams, oms ...*labels.Matcher) (storage.SeriesSet, error) {
-	name, filter, functions := match2filter(oms)
+func (promQuery *V3ioPromQuerier) Select(params *storage.SelectParams, oms ...*labels.Matcher) (storage.SeriesSet, error) {
+	name, filter, functions := match2filter(oms, promQuery.logger)
+	noAggr := false
+
+	promQuery.logger.Debug("SelectParams: %+v", params)
+
 	if params.Func != "" {
-		functions = params.Func
+		// only pass xx_over_time functions (just the xx part)
+		// TODO: support count/stdxx, require changes in Prometheus: promql/functions.go, not calc aggregate twice
+		if strings.HasSuffix(params.Func, "_over_time") {
+			f := params.Func[0:3]
+			if params.Step == 0 && (f == "min" || f == "max" || f == "sum" || f == "avg") {
+				functions = f
+			} else {
+				noAggr = true
+			}
+		}
 	}
-	set, err := q.q.Select(name, functions, params.Step, filter)
+	set, err := promQuery.v3ioQuerier.SelectProm(name, functions, params.Step, filter, noAggr)
 	return &V3ioPromSeriesSet{s: set}, err
 }
 
 // LabelValues returns all potential values for a label name.
-func (q *V3ioPromQuerier) LabelValues(name string) ([]string, error) {
-	return q.q.LabelValues(name)
+func (promQuery *V3ioPromQuerier) LabelValues(name string) ([]string, error) {
+	return promQuery.v3ioQuerier.LabelValues(name)
 }
 
 // Close releases the resources of the Querier.
-func (q *V3ioPromQuerier) Close() error {
+func (promQuery *V3ioPromQuerier) Close() error {
 	return nil
 }
 
-func match2filter(oms []*labels.Matcher) (string, string, string) {
-	filter := []string{}
-	aggregator := ""
+func match2filter(oms []*labels.Matcher, logger logger.Logger) (string, string, string) {
+	var filter []string
+	agg := ""
 	name := ""
 
 	for _, matcher := range oms {
-		if matcher.Name == "Aggregator" {
-			aggregator = matcher.Value
+		logger.Debug("Matcher: %+v", matcher)
+		if matcher.Name == aggregate.AggregateLabel {
+			agg = matcher.Value
 		} else if matcher.Name == "__name__" && matcher.Type == labels.MatchEqual {
 			name = matcher.Value
 		} else {
@@ -97,7 +124,8 @@ func match2filter(oms []*labels.Matcher) (string, string, string) {
 			}
 		}
 	}
-	return name, strings.Join(filter, " and "), aggregator
+	filterExp := strings.Join(filter, " and ")
+	return name, filterExp, agg
 }
 
 type V3ioPromSeriesSet struct {

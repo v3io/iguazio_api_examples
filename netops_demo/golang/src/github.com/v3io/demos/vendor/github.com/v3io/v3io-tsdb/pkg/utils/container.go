@@ -27,12 +27,15 @@ import (
 	"github.com/nuclio/zap"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/pkg/config"
 	"time"
 )
 
-func NewLogger(verbose string) (logger.Logger, error) {
+const defaultHttpTimeout = 10 * time.Second
+
+func NewLogger(level string) (logger.Logger, error) {
 	var logLevel nucliozap.Level
-	switch verbose {
+	switch level {
 	case "debug":
 		logLevel = nucliozap.DebugLevel
 	case "info":
@@ -52,29 +55,41 @@ func NewLogger(verbose string) (logger.Logger, error) {
 	return log, nil
 }
 
-func CreateContainer(logger logger.Logger, addr, cont, username, password string, workers int) (*v3io.Container, error) {
-	// create context
-	context, err := v3io.NewContext(logger, addr, workers)
+func CreateContainer(logger logger.Logger, cfg *config.V3ioConfig) (*v3io.Container, error) {
+	// Create context
+	context, err := v3io.NewContext(logger, cfg.WebApiEndpoint, cfg.Workers)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create client")
+		return nil, errors.Wrap(err, "Failed to create a V3IO TSDB client.")
 	}
 
-	// create session
-	session, err := context.NewSession(username, password, "v3test")
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session")
+	if cfg.HttpTimeout == "" {
+		context.Sync.Timeout = defaultHttpTimeout
+	} else {
+		timeout, err := time.ParseDuration(cfg.HttpTimeout)
+		if err != nil {
+			logger.Warn("Failed to parse httpTimeout '%s'. Defaulting to %d millis.", cfg.HttpTimeout, defaultHttpTimeout/time.Millisecond)
+			context.Sync.Timeout = defaultHttpTimeout
+		} else {
+			context.Sync.Timeout = timeout
+		}
 	}
 
-	// create the container
-	container, err := session.NewContainer(cont)
+	// Create session
+	session, err := context.NewSession(cfg.Username, cfg.Password, "v3test")
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create container")
+		return nil, errors.Wrap(err, "Failed to create a session.")
+	}
+
+	// Create the container
+	container, err := session.NewContainer(cfg.Container)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create a container.")
 	}
 
 	return container, nil
 }
 
-// convert v3io blob to Int array
+// Convert a V3IO blob to an integers array
 func AsInt64Array(val []byte) []uint64 {
 	var array []uint64
 	bytes := val
@@ -103,7 +118,7 @@ func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter s
 		req, err := container.DeleteObject(&v3io.DeleteObjectInput{Path: path + "/" + name}, nil, responseChan)
 		if err != nil {
 			commChan <- i
-			return errors.Wrap(err, "failed to delete object "+name)
+			return errors.Wrapf(err, "Failed to delete object '%s'.", name)
 		}
 		reqMap[req.ID] = true
 		i++
@@ -111,7 +126,7 @@ func DeleteTable(logger logger.Logger, container *v3io.Container, path, filter s
 
 	commChan <- i
 	if iter.Err() != nil {
-		return errors.Wrap(iter.Err(), "failed to delete object ")
+		return errors.Wrap(iter.Err(), "Failed to delete object.")
 	}
 
 	<-doneChan
@@ -134,7 +149,7 @@ func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.
 				active = true
 
 				if resp.Error != nil {
-					fmt.Println(resp.Error, "failed Delete response")
+					fmt.Println(resp.Error, "Failed to receive a response to delete request.")
 				}
 
 				if requests == responses {
@@ -150,7 +165,7 @@ func respWaitLoop(comm chan int, responseChan chan *v3io.Response, timeout time.
 
 			case <-time.After(timeout):
 				if !active {
-					fmt.Println("\nResp loop timed out! ", requests, responses)
+					fmt.Println("\nResponse loop timed out.", requests, responses)
 					done <- true
 					return
 				} else {

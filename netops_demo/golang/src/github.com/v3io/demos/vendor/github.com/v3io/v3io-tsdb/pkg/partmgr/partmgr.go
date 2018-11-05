@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/internal/pkg/performance"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
@@ -34,28 +35,28 @@ import (
 	"sync"
 )
 
-// Create new Partition Manager
-func NewPartitionMngr(cfg *config.Schema, partPath string, cont *v3io.Container) (*PartitionManager, error) {
-	currentPartitionInterval, err := utils.Str2duration(cfg.PartitionSchemaInfo.PartitionerInterval)
+// Create a new partition manager
+func NewPartitionMngr(schemaConfig *config.Schema, cont *v3io.Container, v3ioConfig *config.V3ioConfig) (*PartitionManager, error) {
+	currentPartitionInterval, err := utils.Str2duration(schemaConfig.PartitionSchemaInfo.PartitionerInterval)
 	if err != nil {
 		return nil, err
 	}
-	newMngr := &PartitionManager{cfg: cfg, path: partPath, cyclic: false, container: cont, currentPartitionInterval: currentPartitionInterval}
-	newMngr.updatePartitionsFromSchema(cfg)
+	newMngr := &PartitionManager{schemaConfig: schemaConfig, cyclic: false, container: cont, currentPartitionInterval: currentPartitionInterval, v3ioConfig: v3ioConfig}
+	newMngr.updatePartitionsFromSchema(schemaConfig)
 	return newMngr, nil
 }
 
-// Create and Init a new Partition
+// Create and initialize a new partition
 func NewDBPartition(pmgr *PartitionManager, startTime int64, path string) (*DBPartition, error) {
-	rollupTime, err := utils.Str2duration(pmgr.cfg.PartitionSchemaInfo.AggregatorsGranularity)
+	rollupTime, err := utils.Str2duration(pmgr.schemaConfig.PartitionSchemaInfo.AggregationGranularity)
 	if err != nil {
 		return nil, err
 	}
-	partitionInterval, err := utils.Str2duration(pmgr.cfg.PartitionSchemaInfo.PartitionerInterval)
+	partitionInterval, err := utils.Str2duration(pmgr.schemaConfig.PartitionSchemaInfo.PartitionerInterval)
 	if err != nil {
 		return nil, err
 	}
-	chunkInterval, err := utils.Str2duration(pmgr.cfg.PartitionSchemaInfo.ChunckerInterval)
+	chunkInterval, err := utils.Str2duration(pmgr.schemaConfig.PartitionSchemaInfo.ChunckerInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +67,11 @@ func NewDBPartition(pmgr *PartitionManager, startTime int64, path string) (*DBPa
 		partitionInterval: partitionInterval,
 		chunkInterval:     chunkInterval,
 		prefix:            "",
-		retentionDays:     pmgr.cfg.PartitionSchemaInfo.SampleRetention,
+		retentionDays:     pmgr.schemaConfig.PartitionSchemaInfo.SampleRetention,
 		rollupTime:        rollupTime,
 	}
 
-	aggrType, err := aggregate.AggrsFromString(pmgr.cfg.PartitionSchemaInfo.Aggregators)
+	aggrType, err := aggregate.AggrsFromString(pmgr.schemaConfig.PartitionSchemaInfo.Aggregates)
 	if err != nil {
 		return nil, err
 	}
@@ -84,17 +85,19 @@ func NewDBPartition(pmgr *PartitionManager, startTime int64, path string) (*DBPa
 
 type PartitionManager struct {
 	mtx                      sync.RWMutex
-	path                     string
-	cfg                      *config.Schema
+	schemaConfig             *config.Schema
+	schemaMtimeSecs          int
+	schemaMtimeNanosecs      int
 	headPartition            *DBPartition
 	partitions               []*DBPartition
 	cyclic                   bool
 	container                *v3io.Container
 	currentPartitionInterval int64 //TODO update on schema changes
+	v3ioConfig               *config.V3ioConfig
 }
 
-func (p *PartitionManager) IsCyclic() bool {
-	return p.cyclic
+func (p *PartitionManager) Path() string {
+	return p.v3ioConfig.TablePath
 }
 
 func (p *PartitionManager) GetPartitionsPaths() []string {
@@ -106,7 +109,7 @@ func (p *PartitionManager) GetPartitionsPaths() []string {
 }
 
 func (p *PartitionManager) GetConfig() *config.Schema {
-	return p.cfg
+	return p.schemaConfig
 }
 
 func (p *PartitionManager) Init() error {
@@ -130,7 +133,7 @@ func (p *PartitionManager) TimeToPart(t int64) (*DBPartition, error) {
 				return p.headPartition, nil
 			}
 		} else {
-			//iterate backwards, ignore last elem as it's the headPartition
+			// Iterate backwards; ignore the last element as it's the head partition
 			for i := len(p.partitions) - 2; i >= 0; i-- {
 				if t > p.partitions[i].startTime {
 					return p.partitions[i], nil
@@ -146,7 +149,7 @@ func (p *PartitionManager) TimeToPart(t int64) (*DBPartition, error) {
 
 func (p *PartitionManager) createAndUpdatePartition(t int64) (*DBPartition, error) {
 	time := t & 0x7FFFFFFFFFFFFFF0
-	partPath := path.Join(p.path, strconv.FormatInt(time/1000, 10)) + "/"
+	partPath := path.Join(p.Path(), strconv.FormatInt(time/1000, 10)) + "/"
 	partition, err := NewDBPartition(p, time, partPath)
 	if err != nil {
 		return nil, err
@@ -165,20 +168,26 @@ func (p *PartitionManager) createAndUpdatePartition(t int64) (*DBPartition, erro
 			}
 		}
 	}
-	p.cfg.Partitions = append(p.cfg.Partitions, &config.Partition{StartTime: partition.startTime, SchemaInfo: p.cfg.PartitionSchemaInfo})
+	p.schemaConfig.Partitions = append(p.schemaConfig.Partitions, &config.Partition{StartTime: partition.startTime, SchemaInfo: p.schemaConfig.PartitionSchemaInfo})
 	err = p.updateSchema()
 	return partition, err
 }
 
-func (p *PartitionManager) updateSchema() error {
-	data, err := json.Marshal(p.cfg)
-	if err != nil {
-		return errors.Wrap(err, "Failed to update new partition in schema file")
-	}
-	if p.container != nil { //tests use case only
-		err = p.container.Sync.PutObject(&v3io.PutObjectInput{Path: path.Join(p.path, config.SCHEMA_CONFIG), Body: data})
-	}
-	return err
+func (p *PartitionManager) updateSchema() (err error) {
+
+	metricReporter := performance.ReporterInstanceFromConfig(p.v3ioConfig)
+	metricReporter.WithTimer("UpdateSchemaTimer", func() {
+		data, err := json.Marshal(p.schemaConfig)
+		if err != nil {
+			err = errors.Wrap(err, "Failed to update a new partition in the schema file.")
+			return
+		}
+		if p.container != nil { // Tests use case only
+			err = p.container.Sync.PutObject(&v3io.PutObjectInput{Path: path.Join(p.Path(), config.SchemaConfigFileName), Body: data})
+		}
+	})
+
+	return
 }
 
 func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPartition) {
@@ -191,10 +200,10 @@ func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPa
 		}
 
 	}
-	for i := len(p.cfg.Partitions) - 1; i >= 0; i-- {
+	for i := len(p.schemaConfig.Partitions) - 1; i >= 0; i-- {
 		for _, partToDelete := range partitionsToDelete {
-			if p.cfg.Partitions[i].StartTime == partToDelete.startTime {
-				p.cfg.Partitions = append(p.cfg.Partitions[:i], p.cfg.Partitions[i+1:]...)
+			if p.schemaConfig.Partitions[i].StartTime == partToDelete.startTime {
+				p.schemaConfig.Partitions = append(p.schemaConfig.Partitions[:i], p.schemaConfig.Partitions[i+1:]...)
 				break
 			}
 		}
@@ -203,27 +212,59 @@ func (p *PartitionManager) DeletePartitionsFromSchema(partitionsToDelete []*DBPa
 	p.updateSchema()
 }
 
-func (p *PartitionManager) ReadAndUpdateSchema() error {
-	fullPath := path.Join(p.path, config.SCHEMA_CONFIG)
-	resp, err := p.container.Sync.GetObject(&v3io.GetObjectInput{Path: fullPath})
+func (p *PartitionManager) ReadAndUpdateSchema() (err error) {
+	metricReporter, err := performance.DefaultReporterInstance()
 	if err != nil {
-		return errors.Wrap(err, "Failed to read schema at path: "+fullPath)
+		err = errors.Wrap(err, "Unable to initialize the performance-metrics reporter.")
+		return
 	}
 
-	schema := &config.Schema{}
-	err = json.Unmarshal(resp.Body(), schema)
+	fullPath := path.Join(p.Path(), config.SchemaConfigFileName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to unmarshal schema at path: "+fullPath)
+		err = errors.Wrap(err, "Failed to create timer ReadAndUpdateSchemaTimer.")
+		return
 	}
-	p.cfg = schema
-	p.updatePartitionsFromSchema(schema)
-	return nil
+	schemaInfoResp, err := p.container.Sync.GetItem(&v3io.GetItemInput{Path: fullPath, AttributeNames: []string{"__mtime_secs", "__mtime_nsecs"}})
+	if err != nil {
+		err = errors.Wrapf(err, "Failed to read schema at path '%s'.", fullPath)
+	}
+	mtimeSecs, err := schemaInfoResp.Output.(*v3io.GetItemOutput).Item.GetFieldInt("__mtime_secs")
+	if err != nil {
+		err = errors.Wrapf(err, "Failed to get start time (mtime) in seconds from the schema at '%s'.", fullPath)
+	}
+	mtimeNsecs, err := schemaInfoResp.Output.(*v3io.GetItemOutput).Item.GetFieldInt("__mtime_nsecs")
+	if err != nil {
+		err = errors.Wrapf(err, "Failed to get start time (mtime) in nanoseconds from the schema at '%s'.", fullPath)
+	}
+
+	// Get schema only if the schema has changed
+	if mtimeSecs > p.schemaMtimeSecs || (mtimeSecs == p.schemaMtimeSecs && mtimeNsecs > p.schemaMtimeNanosecs) {
+		p.schemaMtimeSecs = mtimeSecs
+		p.schemaMtimeNanosecs = mtimeNsecs
+
+		metricReporter.WithTimer("ReadAndUpdateSchemaTimer", func() {
+			resp, err := p.container.Sync.GetObject(&v3io.GetObjectInput{Path: fullPath})
+			if err != nil {
+				err = errors.Wrapf(err, "Failed to read schema at path '%s'.", fullPath)
+			}
+
+			schema := &config.Schema{}
+			err = json.Unmarshal(resp.Body(), schema)
+			if err != nil {
+				err = errors.Wrapf(err, "Failed to unmarshal schema at path '%s'.", fullPath)
+			}
+			p.schemaConfig = schema
+			p.updatePartitionsFromSchema(schema)
+
+		})
+	}
+	return
 }
 
 func (p *PartitionManager) updatePartitionsFromSchema(schema *config.Schema) error {
 	p.partitions = []*DBPartition{}
 	for _, part := range schema.Partitions {
-		partPath := path.Join(p.path, strconv.FormatInt(part.StartTime/1000, 10)) + "/"
+		partPath := path.Join(p.Path(), strconv.FormatInt(part.StartTime/1000, 10)) + "/"
 		newPart, err := NewDBPartition(p, part.StartTime, partPath)
 		if err != nil {
 			return err
@@ -250,22 +291,22 @@ func (p *PartitionManager) PartsForRange(mint, maxt int64) []*DBPartition {
 
 type DBPartition struct {
 	manager           *PartitionManager
-	path              string             // Full path (in the DB) to the partition
-	startTime         int64              // Start from time/date
-	partitionInterval int64              // Number of millis stored in the partition
-	chunkInterval     int64              // number of millis stored in each chunk
+	path              string             // Full path to the partition within the DB
+	startTime         int64              // Start time
+	partitionInterval int64              // Number of msecs stored in the partition
+	chunkInterval     int64              // Number of msecs stored in each chunk
 	prefix            string             // Path prefix
 	retentionDays     int                // Keep samples for N hours
-	defaultRollups    aggregate.AggrType // Default Aggregation functions to apply on sample update
+	defaultRollups    aggregate.AggrType // Default aggregation functions to apply on sample update
 	rollupTime        int64              // Time range per aggregation bucket
-	rollupBuckets     int                // Total number of buckets per partition
+	rollupBuckets     int                // Total number of aggregation buckets per partition
 }
 
 func (p *DBPartition) IsCyclic() bool {
 	return p.manager.cyclic
 }
 
-// Time covered by a single chunk
+// Return the time range covered by a single chunk (the chunk interval)
 func (p *DBPartition) TimePerChunk() int64 {
 	return p.chunkInterval
 }
@@ -282,24 +323,24 @@ func (p *DBPartition) GetEndTime() int64 {
 	return p.startTime + p.partitionInterval - 1
 }
 
-// return path to metrics table
+// Return the path to this partition's TSDB table
 func (p *DBPartition) GetTablePath() string {
 	return p.path
 }
 
-// return list of Sharding Keys matching the name
+// Return a list of sharding keys matching the given item name
 func (p *DBPartition) GetShardingKeys(name string) []string {
-	shardingKeysNum := p.manager.cfg.TableSchemaInfo.ShardingBuckets
+	shardingKeysNum := p.manager.schemaConfig.TableSchemaInfo.ShardingBucketsCount
 	var res = make([]string, 0, shardingKeysNum)
 	for i := 0; i < shardingKeysNum; i++ {
-		// Trailing dot for rangescan queries
+		// Trailing period ('.') for range-scan queries
 		res = append(res, fmt.Sprintf("%s_%x.", name, i))
 	}
 
 	return res
 }
 
-// return metric object full path
+// Return the full path to the specified metric item
 func (p *DBPartition) GetMetricPath(name string, hash uint64) string {
 	return fmt.Sprintf("%s%s_%x.%016x", p.path, name, int(hash%uint64(p.GetHashingBuckets())), hash)
 }
@@ -316,7 +357,7 @@ func (p *DBPartition) RollupTime() int64 {
 	return p.rollupTime
 }
 
-// get aggregator bucket id
+// Return the aggregation bucket ID for the specified time
 func (p *DBPartition) Time2Bucket(t int64) int {
 	if p.rollupTime == 0 {
 		return 0
@@ -330,7 +371,7 @@ func (p *DBPartition) Time2Bucket(t int64) int {
 	return int((t - p.startTime) / p.rollupTime)
 }
 
-// get nearest chunk start
+// Return the nearest chunk start time for the specified time
 func (p *DBPartition) GetChunkMint(t int64) int64 {
 	if t > p.GetEndTime() {
 		return p.GetEndTime() - p.chunkInterval + 1
@@ -341,26 +382,26 @@ func (p *DBPartition) GetChunkMint(t int64) int64 {
 	return p.chunkInterval * (t / p.chunkInterval)
 }
 
-// is the time t in the range of the chunk starting at mint
+// Check whether the specified time (t) is within the range of the chunk starting at the specified start time (mint)
 func (p *DBPartition) InChunkRange(mint, t int64) bool {
 	return t >= mint && t < (mint+p.chunkInterval)
 }
 
-// is the time t ahead of the range of the chunk starting at mint
+// Check whether the specified time (t) is ahead of the range of the chunk starting at the specified start time (mint)
 func (p *DBPartition) IsAheadOfChunk(mint, t int64) bool {
 	return t >= (mint + p.chunkInterval)
 }
 
-// Get ID of the Chunk covering time t
+// Return the ID of the chunk whose range includes the specified time
 func (p *DBPartition) TimeToChunkId(tmilli int64) (int, error) {
 	if tmilli >= p.startTime && tmilli <= p.GetEndTime() {
 		return int((tmilli-p.startTime)/p.chunkInterval) + 1, nil
 	} else {
-		return -1, errors.Errorf("time %d is not covered by time partition", tmilli)
+		return -1, errors.Errorf("Time %d isn't within the range of this partition.", tmilli)
 	}
 }
 
-// is t covered by this partition
+// Check whether the specified time is within the range of this partition
 func (p *DBPartition) InRange(t int64) bool {
 	if p.manager.cyclic {
 		return true
@@ -368,30 +409,33 @@ func (p *DBPartition) InRange(t int64) bool {
 	return t >= p.startTime && t <= p.GetEndTime()
 }
 
-// return the mint and maxt for this partition, may need maxt for cyclic partition
+// Return the start time (mint) and end time (maxt) for this partition;
+// maxt may be required for a cyclic partition
 func (p *DBPartition) GetPartitionRange() (int64, int64) {
-	// start p.days ago, rounded to next hour
+	// Start p.days ago, rounded to next hour
 	return p.startTime, p.startTime + p.partitionInterval
 }
 
-// Attribute name of a chunk
+// Return the attribute name of the given chunk
 func (p *DBPartition) ChunkID2Attr(col string, id int) string {
 	return fmt.Sprintf("_%s%d", col, id)
 }
 
-// Return the attributes that need to be retrieved for a given time range
-func (p *DBPartition) Range2Attrs(col string, mint, maxt int64) ([]string, []int) {
+// Return the attributes that need to be retrieved for the specified time range
+func (p *DBPartition) Range2Attrs(col string, mint, maxt int64) ([]string, int64) {
 	list := p.Range2Cids(mint, maxt)
-	strList := []string{}
+	var strList []string
 	for _, id := range list {
 		strList = append(strList, p.ChunkID2Attr(col, id))
 	}
-	return strList, list
+
+	firstAttrTime := p.startTime + ((mint-p.startTime)/p.chunkInterval)*p.chunkInterval
+	return strList, firstAttrTime
 }
 
-// All the chunk IDs which match the time range
+// Return a list of all the chunk IDs that match the specified time range
 func (p *DBPartition) Range2Cids(mint, maxt int64) []int {
-	list := []int{}
+	var list []int
 	start, err := p.TimeToChunkId(mint)
 	if err != nil {
 		start = 1
@@ -407,10 +451,10 @@ func (p *DBPartition) Range2Cids(mint, maxt int64) []int {
 }
 
 func (p *DBPartition) GetHashingBuckets() int {
-	return p.manager.cfg.TableSchemaInfo.ShardingBuckets
+	return p.manager.schemaConfig.TableSchemaInfo.ShardingBucketsCount
 }
 
-// Convert time in milisec to Day index and hour
+// Convert a time in milliseconds to day and hour integers
 func TimeToDHM(tmilli int64) (int, int) {
 	t := int(tmilli / 1000)
 	h := (t / 3600) % 24

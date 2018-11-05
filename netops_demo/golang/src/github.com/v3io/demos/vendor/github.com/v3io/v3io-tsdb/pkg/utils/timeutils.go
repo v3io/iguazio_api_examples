@@ -27,21 +27,28 @@ import (
 	"time"
 )
 
-// convert duration string e.g. 24h to time (unix milisecond)
+const (
+	OneMinuteMs = 60 * 1000
+	OneHourMs   = 3600 * 1000
+	OneDayMs    = 24 * 3600 * 1000
+)
+
+// Convert a "[0-9]+[mhd]" duration string (for example, "24h") to a
+// Unix timestamp in milliseconds integer
 func Str2duration(duration string) (int64, error) {
 
-	multiply := 3600 * 1000 // hour by default
+	multiply := OneHourMs // 1 hour by default
 	if len(duration) > 0 {
 		last := duration[len(duration)-1:]
 		if last == "m" || last == "h" || last == "d" {
 			duration = duration[0 : len(duration)-1]
 			switch last {
 			case "m":
-				multiply = 60 * 1000
+				multiply = OneMinuteMs
 			case "h":
-				multiply = 3600 * 1000
+				multiply = OneHourMs
 			case "d":
-				multiply = 24 * 3600 * 1000
+				multiply = OneDayMs
 			}
 		}
 	}
@@ -53,35 +60,55 @@ func Str2duration(duration string) (int64, error) {
 	i, err := strconv.Atoi(duration)
 	if err != nil {
 		return 0, errors.Wrap(err,
-			`not a valid duration. Accepted pattern: [0-9]+[dhms]. Examples: 30d (30 days), 5m (5 minutes)`)
+			`Invalid duration. Accepted pattern: [0-9]+[mhd]. Examples: "30d" (30 days); "5m" (5 minutes).`)
+	}
+	if i < 0 {
+		return 0, errors.Errorf("The specified duration (%s) is negative.", duration)
 	}
 
 	return int64(i * multiply), nil
 }
 
-// convert time string to time (unix milisecond)
-func Str2unixTime(tstr string) (int64, error) {
+// Convert a time string to a Unix timestamp in milliseconds integer.
+// The input time string can be of the format "now", "now-[0-9]+[mdh]" (for
+// example, "now-2h"), "<Unix timestamp in milliseconds>", or "<RFC 3339 time>"
+// (for example, "2018-09-26T14:10:20Z").
+func Str2unixTime(timeString string) (int64, error) {
+	if strings.HasPrefix(timeString, "now") {
+		if len(timeString) > 3 {
+			sign := timeString[3:4]
+			duration := timeString[4:]
 
-	if tstr == "now" || tstr == "now-" {
-		return time.Now().Unix() * 1000, nil
-	} else if strings.HasPrefix(tstr, "now-") {
-		t, err := Str2duration(tstr[4:])
-		if err != nil {
-			return 0, errors.Wrap(err, "could not parse pattern following 'now-'")
+			t, err := Str2duration(duration)
+			if err != nil {
+				return 0, errors.Wrap(err, "Could not parse the pattern following 'now-'.")
+			}
+			if sign == "-" {
+				return CurrentTimeInMillis() - int64(t), nil
+			} else if sign == "+" {
+				return CurrentTimeInMillis() + int64(t), nil
+			} else {
+				return 0, errors.Wrapf(err, "Unsupported time format:", timeString)
+			}
+		} else {
+			return CurrentTimeInMillis(), nil
 		}
-		return time.Now().Unix()*1000 - int64(t), nil
 	}
 
-	tint, err := strconv.Atoi(tstr)
+	tint, err := strconv.Atoi(timeString)
 	if err == nil {
 		return int64(tint), nil
 	}
 
-	t, err := time.Parse(time.RFC3339, tstr)
+	t, err := time.Parse(time.RFC3339, timeString)
 	if err != nil {
-		return 0, errors.Wrap(err, "Not an RFC 3339 time format")
+		return 0, errors.Wrap(err, "Invalid time string - not an RFC 3339 time format.")
 	}
 	return t.Unix() * 1000, nil
+}
+
+func CurrentTimeInMillis() int64 {
+	return time.Now().Unix() * 1000
 }
 
 func GetTimeFromRange(from, to, last, step string) (f int64, t int64, s int64, err error) {
@@ -91,7 +118,7 @@ func GetTimeFromRange(from, to, last, step string) (f int64, t int64, s int64, e
 		return
 	}
 
-	t = time.Now().Unix() * 1000
+	t = CurrentTimeInMillis()
 	if to != "" {
 		t, err = Str2unixTime(to)
 		if err != nil {
@@ -99,7 +126,7 @@ func GetTimeFromRange(from, to, last, step string) (f int64, t int64, s int64, e
 		}
 	}
 
-	f = t - 1000*3600 // default of last hour
+	f = t - OneHourMs // default of last hour
 	if from != "" {
 		f, err = Str2unixTime(from)
 		if err != nil {

@@ -25,6 +25,7 @@ import (
 	"github.com/nuclio/logger"
 	"github.com/pkg/errors"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/internal/pkg/performance"
 	"github.com/v3io/v3io-tsdb/pkg/config"
 	"github.com/v3io/v3io-tsdb/pkg/partmgr"
 	"github.com/v3io/v3io-tsdb/pkg/utils"
@@ -34,9 +35,11 @@ import (
 
 // TODO: make configurable
 const maxRetriesOnWrite = 3
-const channelSize = 4048
-const maxSamplesBatchSize = 16
+const channelSize = 4096
 const queueStallTime = 1 * time.Millisecond
+
+const minimalUnixTimeMs = 0          // year 1970
+const maxUnixTimeMs = 13569465600000 // year 2400
 
 // to add, rollups policy (cnt, sum, min/max, sum^2) + interval , or policy in per name label
 type MetricState struct {
@@ -92,6 +95,11 @@ func (m *MetricState) error() error {
 	return m.err
 }
 
+type cacheKey struct {
+	name string
+	hash uint64
+}
+
 // store the state and metadata for all the metrics
 type MetricsCache struct {
 	cfg           *config.V3ioConfig
@@ -111,17 +119,20 @@ type MetricsCache struct {
 	newUpdates      chan int
 
 	lastMetric     uint64
-	cacheMetricMap map[uint64]*MetricState // TODO: maybe use hash as key & combine w ref
-	cacheRefMap    map[uint64]*MetricState // TODO: maybe turn to list + free list, periodically delete old matrics
+	cacheMetricMap map[cacheKey]*MetricState // TODO: maybe use hash as key & combine w ref
+	cacheRefMap    map[uint64]*MetricState   // TODO: maybe turn to list + free list, periodically delete old matrics
 
 	NameLabelMap map[string]bool // temp store all lable names
+
+	lastError           error
+	performanceReporter *performance.MetricReporter
 }
 
 func NewMetricsCache(container *v3io.Container, logger logger.Logger, cfg *config.V3ioConfig,
 	partMngr *partmgr.PartitionManager) *MetricsCache {
 
 	newCache := MetricsCache{container: container, logger: logger, cfg: cfg, partitionMngr: partMngr}
-	newCache.cacheMetricMap = map[uint64]*MetricState{}
+	newCache.cacheMetricMap = map[cacheKey]*MetricState{}
 	newCache.cacheRefMap = map[uint64]*MetricState{}
 
 	newCache.responseChan = make(chan *v3io.Response, channelSize)
@@ -133,6 +144,8 @@ func NewMetricsCache(container *v3io.Container, logger logger.Logger, cfg *confi
 	newCache.newUpdates = make(chan int, 1000)
 
 	newCache.NameLabelMap = map[string]bool{}
+	newCache.performanceReporter = performance.ReporterInstanceFromConfig(cfg)
+
 	return &newCache
 }
 
@@ -153,11 +166,11 @@ func (mc *MetricsCache) Start() error {
 }
 
 // return metric struct by key
-func (mc *MetricsCache) getMetric(hash uint64) (*MetricState, bool) {
+func (mc *MetricsCache) getMetric(name string, hash uint64) (*MetricState, bool) {
 	mc.mtx.RLock()
 	defer mc.mtx.RUnlock()
 
-	metric, ok := mc.cacheMetricMap[hash]
+	metric, ok := mc.cacheMetricMap[cacheKey{name, hash}]
 	return metric, ok
 }
 
@@ -169,7 +182,7 @@ func (mc *MetricsCache) addMetric(hash uint64, name string, metric *MetricState)
 	mc.lastMetric++
 	metric.refId = mc.lastMetric
 	mc.cacheRefMap[mc.lastMetric] = metric
-	mc.cacheMetricMap[hash] = metric
+	mc.cacheMetricMap[cacheKey{name, hash}] = metric
 	if _, ok := mc.NameLabelMap[name]; !ok {
 		metric.newName = true
 		mc.NameLabelMap[name] = true
@@ -193,17 +206,21 @@ func (mc *MetricsCache) appendTV(metric *MetricState, t int64, v interface{}) {
 // First time add time & value to metric (by label set)
 func (mc *MetricsCache) Add(lset utils.LabelsIfc, t int64, v interface{}) (uint64, error) {
 
+	err := verifyTimeValid(t)
+	if err != nil {
+		return 0, err
+	}
+
 	name, key, hash := lset.GetKey()
-	//hash := lset.Hash()
-	metric, ok := mc.getMetric(hash)
+	metric, ok := mc.getMetric(name, hash)
 
 	if !ok {
 		metric = &MetricState{Lset: lset, key: key, name: name, hash: hash}
-		metric.store = NewChunkStore()
+		metric.store = NewChunkStore(mc.logger)
 		mc.addMetric(hash, name, metric)
 	}
 
-	err := metric.error()
+	err = metric.error()
 	metric.setError(nil)
 
 	mc.appendTV(metric, t, v)
@@ -214,18 +231,30 @@ func (mc *MetricsCache) Add(lset utils.LabelsIfc, t int64, v interface{}) (uint6
 // fast Add to metric (by refId)
 func (mc *MetricsCache) AddFast(ref uint64, t int64, v interface{}) error {
 
+	err := verifyTimeValid(t)
+	if err != nil {
+		return err
+	}
+
 	metric, ok := mc.getMetricByRef(ref)
 	if !ok {
 		mc.logger.ErrorWith("Ref not found", "ref", ref)
 		return fmt.Errorf("ref not found")
 	}
 
-	err := metric.error()
+	err = metric.error()
 	metric.setError(nil)
 
 	mc.appendTV(metric, t, v)
 
 	return err
+}
+
+func verifyTimeValid(t int64) error {
+	if t > maxUnixTimeMs || t < minimalUnixTimeMs {
+		return fmt.Errorf("Time '%d' doesn't seem to be a valid Unix timesamp in milliseconds. The time must be in the years range 1970-2400.", t)
+	}
+	return nil
 }
 
 func (mc *MetricsCache) WaitForCompletion(timeout time.Duration) (int, error) {
@@ -235,18 +264,29 @@ func (mc *MetricsCache) WaitForCompletion(timeout time.Duration) (int, error) {
 	var maxWaitTime time.Duration = 0
 
 	if timeout == 0 {
-		maxWaitTime = 24 * time.Hour // almost infinite time
+		maxWaitTime = 24 * time.Hour // Almost-infinite time
 	} else if timeout > 0 {
 		maxWaitTime = timeout
 	} else {
-		// if negative - use default value from configuration
+		// If negative, use the default configured timeout value
 		maxWaitTime = time.Duration(mc.cfg.DefaultTimeoutInSeconds) * time.Second
 	}
 
-	select {
-	case res := <-waitChan:
-		return res, nil
-	case <-time.After(maxWaitTime):
-		return 0, errors.Errorf("the operation was timed out after %.2f seconds", maxWaitTime.Seconds())
-	}
+	var resultCount int
+	var err error
+
+	mc.performanceReporter.WithTimer("WaitForCompletionTimer", func() {
+		select {
+		case resultCount = <-waitChan:
+			err = mc.lastError
+			mc.lastError = nil
+			return
+		case <-time.After(maxWaitTime):
+			resultCount = 0
+			err = errors.Errorf("The operation timed out after %.2f seconds.", maxWaitTime.Seconds())
+			return
+		}
+	})
+
+	return resultCount, err
 }

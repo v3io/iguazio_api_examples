@@ -122,12 +122,16 @@ func createTSDBAppender(context *nuclio.Context, path string) (tsdb.Appender, er
 	if adapter == nil {
 		var err error
 
-		v3ioConfig := config.V3ioConfig{}
-		config.InitDefaults(&v3ioConfig)
-		v3ioConfig.Path = path
+		v3ioConfig, err := config.GetOrLoadFromStruct(&config.V3ioConfig{
+			TablePath: path,
+		})
+
+		if err != nil {
+			return nil, err
+		}
 
 		// create adapter once for all contexts
-		adapter, err = tsdb.NewV3ioAdapter(&v3ioConfig, context.DataBinding["db0"].(*v3io.Container), context.Logger)
+		adapter, err = tsdb.NewV3ioAdapter(v3ioConfig, context.DataBinding["db0"].(*v3io.Container), context.Logger)
 		if err != nil {
 			return nil, err
 		}

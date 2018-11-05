@@ -23,34 +23,43 @@ package appender
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/nuclio/logger"
 	"github.com/v3io/v3io-go-http"
+	"github.com/v3io/v3io-tsdb/internal/pkg/performance"
 	"github.com/v3io/v3io-tsdb/pkg/aggregate"
 	"github.com/v3io/v3io-tsdb/pkg/chunkenc"
 	"github.com/v3io/v3io-tsdb/pkg/partmgr"
+	"github.com/v3io/v3io-tsdb/pkg/utils"
 	"sort"
+	"time"
 )
 
 // TODO: make it configurable
-const maxLateArrivalInterval = 59 * 60 * 1000 // max late arrival of 59min
+const maxLateArrivalInterval = 59 * 60 * 1000 // Max late arrival of 59min
 
-// create a chunk store with two chunks (current, previous)
-func NewChunkStore() *chunkStore {
-	store := chunkStore{}
+// Create a chunk store with two chunks (current, previous)
+func NewChunkStore(logger logger.Logger) *chunkStore {
+	store := chunkStore{logger: logger}
 	store.chunks[0] = &attrAppender{}
 	store.chunks[1] = &attrAppender{}
+	store.performanceReporter, _ = performance.DefaultReporterInstance()
+
 	return &store
 }
 
 // chunkStore store state & latest + previous chunk appenders
 type chunkStore struct {
+	logger              logger.Logger
+	performanceReporter *performance.MetricReporter
+
 	curChunk int
 	lastTid  int64
 	chunks   [2]*attrAppender
 
-	aggrList      *aggregate.AggregatorList
+	aggrList      *aggregate.AggregatesList
 	pending       pendingList
 	maxTime       int64
-	initMaxTime   int64 // max time read from DB metric before first append
+	initMaxTime   int64 // Max time read from DB metric before first append
 	delRawSamples bool  // TODO: for metrics w aggregates only
 }
 
@@ -58,7 +67,7 @@ func (cs *chunkStore) samplesQueueLength() int {
 	return len(cs.pending)
 }
 
-// chunk appender object, state used for appending t/v to a chunk
+// Chunk appender object, state used for appending t/v to a chunk
 type attrAppender struct {
 	state     chunkState
 	appender  chunkenc.Appender
@@ -75,24 +84,24 @@ const (
 	chunkStateWriting   chunkState = 8
 )
 
-// initialize/clear the chunk appender
+// Initialize/clear the chunk appender
 func (a *attrAppender) initialize(partition *partmgr.DBPartition, t int64) {
 	a.state = 0
 	a.partition = partition
 	a.chunkMint = partition.GetChunkMint(t)
 }
 
-// check if the time is within the chunk range
+// Check whether the specified time (t) is within the chunk range
 func (a *attrAppender) inRange(t int64) bool {
 	return a.partition.InChunkRange(a.chunkMint, t)
 }
 
-// check if the time is ahead of the chunk range
+// Check whether the specified time (t) is ahead of the chunk range
 func (a *attrAppender) isAhead(t int64) bool {
 	return a.partition.IsAheadOfChunk(a.chunkMint, t)
 }
 
-// Append a single t/v to a chunk
+// Append a single t/v pair to a chunk
 // TODO: change appender from float to interface (allow map[str]interface cols)
 func (a *attrAppender) appendAttr(t int64, v interface{}) {
 	a.appender.Append(t, v.(float64))
@@ -110,70 +119,80 @@ func (l pendingList) Len() int           { return len(l) }
 func (l pendingList) Less(i, j int) bool { return l[i].t < l[j].t }
 func (l pendingList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
-// Read (Async) the current chunk state and data from the storage, used in the first chunk access
-func (cs *chunkStore) GetChunksState(mc *MetricsCache, metric *MetricState) (bool, error) {
+// Read (async) the current chunk state and data from the storage, used in the first chunk access
+func (cs *chunkStore) getChunksState(mc *MetricsCache, metric *MetricState) (bool, error) {
 
-	// init chunk and create aggregation list object based on partition policy
+	if len(cs.pending) == 0 {
+		return false, nil
+	}
+	// Init chunk and create an aggregates-list object based on the partition policy
 	t := cs.pending[0].t
 	part, err := mc.partitionMngr.TimeToPart(t)
 	if err != nil {
 		return false, err
 	}
 	cs.chunks[0].initialize(part, t)
-	cs.aggrList = aggregate.NewAggregatorList(part.AggrType())
+	cs.aggrList = aggregate.NewAggregatesList(part.AggrType())
 
-	// TODO: if policy to merge w old chunks need to get prev chunk, vs restart appender
+	// TODO: if policy to merge w old chunks needs to get prev chunk, vs restart appender
 
-	// issue DB GetItem command to load last state of metric
+	// Issue a GetItem command to the DB to load last state of metric
 	path := part.GetMetricPath(metric.name, metric.hash)
 	getInput := v3io.GetItemInput{
 		Path: path, AttributeNames: []string{"_maxtime"}}
 
 	request, err := mc.container.GetItem(&getInput, metric, mc.responseChan)
 	if err != nil {
-		mc.logger.ErrorWith("Failed to send GetItem request", "metric", metric.key, "err", err)
+		mc.logger.ErrorWith("Failed to send a GetItem request to the TSDB", "metric", metric.key, "err", err)
 		return false, err
 	}
 
-	mc.logger.DebugWith("Get Metric State", "name", metric.name, "key", metric.key, "reqid", request.ID)
+	mc.logger.DebugWith("Get metric state", "name", metric.name, "key", metric.key, "reqid", request.ID)
 	return true, nil
 }
 
 // Process the GetItem response from the DB and initialize or restore the current chunk
-func (cs *chunkStore) ProcessGetResp(mc *MetricsCache, metric *MetricState, resp *v3io.Response) {
+func (cs *chunkStore) processGetResp(mc *MetricsCache, metric *MetricState, resp *v3io.Response) {
 
 	// TODO: init based on schema, use init function, recover old state vs append based on policy
-	chunk := chunkenc.NewXORChunk()
+	chunk := chunkenc.NewXORChunk(cs.logger)
 	app, _ := chunk.Appender()
 	cs.chunks[0].appender = app
 	cs.chunks[0].state |= chunkStateFirst
 
+	latencyNano := time.Now().UnixNano() - resp.Request().SendTimeNanoseconds
+	cs.performanceReporter.UpdateHistogram("UpdateMetricLatencyHistogram", latencyNano)
+
 	if resp.Error != nil {
-		// assume the item not found   TODO: check error code
+		if utils.IsNotExistsError(resp.Error) {
+			if metric.newName {
+				path := mc.cfg.TablePath + "/names/" + metric.name
+				putInput := v3io.PutItemInput{Path: path, Attributes: map[string]interface{}{}}
 
-		if metric.newName {
-			path := mc.cfg.Path + "/names/" + metric.name
-			putInput := v3io.PutItemInput{Path: path, Attributes: map[string]interface{}{}}
-
-			request, err := mc.container.PutItem(&putInput, metric, mc.nameUpdateChan)
-			if err != nil {
-				mc.logger.ErrorWith("Update name putItem Failed", "metric", metric.key, "err", err)
-			} else {
-				mc.logger.DebugWith("Update name", "name", metric.name, "key", metric.key, "reqid", request.ID)
+				request, err := mc.container.PutItem(&putInput, metric, mc.nameUpdateChan)
+				if err != nil {
+					cs.performanceReporter.IncrementCounter("PutNameError", 1)
+					mc.logger.ErrorWith("Update-name PutItem failed", "metric", metric.key, "err", err)
+				} else {
+					mc.logger.DebugWith("Update name", "name", metric.name, "key", metric.key, "reqid", request.ID)
+				}
 			}
+		} else {
+			mc.logger.Error("Update metric has failed with error: %v", resp.Error)
+			cs.performanceReporter.IncrementCounter("UpdateMetricError", 1)
 		}
 
 		return
 	}
 
-	// check and update metric Max timestamp, allow continuing from the last point in case of failure
+	// Check and update the metric item's end time (maxt) timestamp, allow continuing from the last point in case of failure
 	item := resp.Output.(*v3io.GetItemOutput).Item
 	var maxTime int64
 	val := item["_maxtime"]
 	if val != nil {
 		maxTime = int64(val.(int))
 	}
-	mc.logger.DebugWith("Got Item", "name", metric.name, "key", metric.key, "maxt", maxTime)
+	mc.logger.DebugWith("Got metric item", "name", metric.name, "key", metric.key, "maxt", maxTime)
 
 	if !mc.cfg.OverrideOld {
 		cs.maxTime = maxTime
@@ -184,38 +203,39 @@ func (cs *chunkStore) ProcessGetResp(mc *MetricsCache, metric *MetricState, resp
 		cs.chunks[0].state |= chunkStateMerge
 	}
 
-	// set Last TableId, indicate that there is no need to create metric object
+	// Set Last TableId - indicate that there is no need to create metric object
 	cs.lastTid = cs.chunks[0].partition.GetStartTime()
-
 }
 
 // Append data to the right chunk and table based on the time and state
 func (cs *chunkStore) Append(t int64, v interface{}) {
+	if metricReporter, err := performance.DefaultReporterInstance(); err == nil {
+		metricReporter.IncrementCounter("AppendCounter", 1)
+	}
 
 	cs.pending = append(cs.pending, pendingData{t: t, v: v})
-	// if the new time is older than previous times, sort the list
+	// If the new time is older than previous times, sort the list
 	if len(cs.pending) > 1 && cs.pending[len(cs.pending)-2].t < t {
 		sort.Sort(cs.pending)
 	}
-
 }
 
-// return current, previous, or create new  chunk based on sample time
+// Return current, previous, or create new  chunk based on sample time
 func (cs *chunkStore) chunkByTime(t int64) *attrAppender {
 
-	// sample in the current chunk
+	// Sample is in the current chunk
 	cur := cs.chunks[cs.curChunk]
 	if cur.inRange(t) {
 		return cur
 	}
 
-	// sample is in the next chunk, need to initialize
+	// Sample is in the next chunk, need to initialize
 	if cur.isAhead(t) {
-		// time is ahead of this chunk time, advance cur chunk
+		// Time is ahead of this chunk time, advance the current chunk
 		part := cur.partition
 		cur = cs.chunks[cs.curChunk^1]
 
-		chunk := chunkenc.NewXORChunk() // TODO: init based on schema, use init function
+		chunk := chunkenc.NewXORChunk(cs.logger) // TODO: init based on schema, use init function
 		app, err := chunk.Appender()
 		if err != nil {
 			return nil
@@ -228,13 +248,13 @@ func (cs *chunkStore) chunkByTime(t int64) *attrAppender {
 		return cur
 	}
 
-	// if its the first chunk after init we do not allow old updates
+	// If it's the first chunk after init we don't allow old updates
 	if (cur.state & chunkStateFirst) != 0 {
 		return nil
 	}
 
 	prev := cs.chunks[cs.curChunk^1]
-	// delayed Appends only allowed to previous chunk or within allowed window
+	// Delayed appends - only allowed to previous chunk or within allowed window
 	if prev.partition != nil && prev.inRange(t) && t > cs.maxTime-maxLateArrivalInterval {
 		return prev
 	}
@@ -242,144 +262,157 @@ func (cs *chunkStore) chunkByTime(t int64) *attrAppender {
 	return nil
 }
 
-// write all pending samples to DB chunks and aggregators
-func (cs *chunkStore) WriteChunks(mc *MetricsCache, metric *MetricState) (bool, error) {
-
-	// return if there are no pending updates
-	if len(cs.pending) == 0 {
-		return false, nil
-	}
-
-	expr := ""
-	notInitialized := false
-
-	// init partition info and find if we need to init the metric headers (labels, ..) in case of new partition
-	t0 := cs.pending[0].t
-	partition, err := mc.partitionMngr.TimeToPart(t0)
-	if err != nil {
-		return false, err
-	}
-	if partition.GetStartTime() > cs.lastTid {
-		notInitialized = true
-		cs.lastTid = partition.GetStartTime()
-	}
-
-	// init aggregation buckets info
-	bucket := partition.Time2Bucket(t0)
-	numBuckets := partition.AggrBuckets()
-	isNewBucket := bucket > partition.Time2Bucket(cs.maxTime)
-
-	var activeChunk *attrAppender
-	var pendingSampleIndex int
-	var pendingSamplesCount int
-
-	// loop over pending samples, add to chunks & aggregates (create required update expressions)
-	for pendingSampleIndex < len(cs.pending) && pendingSamplesCount < mc.cfg.BatchSize && partition.InRange(cs.pending[pendingSampleIndex].t) {
-		sampleTime := cs.pending[pendingSampleIndex].t
-
-		if sampleTime <= cs.initMaxTime && !mc.cfg.OverrideOld {
-			mc.logger.DebugWith("Time is less than init max time", "T", sampleTime, "InitMaxTime", cs.initMaxTime)
-			pendingSampleIndex++
-			continue
+// Write all pending samples to DB chunks and aggregates
+func (cs *chunkStore) writeChunks(mc *MetricsCache, metric *MetricState) (hasPendingUpdates bool, err error) {
+	cs.performanceReporter.WithTimer("WriteChunksTimer", func() {
+		// Return if there are no pending updates
+		if len(cs.pending) == 0 {
+			hasPendingUpdates, err = false, nil
+			return
 		}
 
-		// init activeChunk if nil (when samples are too old), if still too old skip to next sample
-		if activeChunk == nil {
-			activeChunk = cs.chunkByTime(sampleTime)
-			if activeChunk == nil {
+		expr := ""
+		notInitialized := false
+
+		// Init the partition info and find whether we need to init the metric headers (labels, ..) in the case of a new partition
+		t0 := cs.pending[0].t
+		partition, err := mc.partitionMngr.TimeToPart(t0)
+		if err != nil {
+			hasPendingUpdates = false
+			return
+		}
+		if partition.GetStartTime() > cs.lastTid {
+			notInitialized = true
+			cs.lastTid = partition.GetStartTime()
+		}
+
+		// Init the aggregation-buckets info
+		bucket := partition.Time2Bucket(t0)
+		numBuckets := partition.AggrBuckets()
+		isNewBucket := bucket > partition.Time2Bucket(cs.maxTime)
+
+		var activeChunk *attrAppender
+		var pendingSampleIndex int
+		var pendingSamplesCount int
+
+		// Loop over pending samples, add to chunks & aggregates (create required update expressions)
+		for pendingSampleIndex < len(cs.pending) && pendingSamplesCount < mc.cfg.BatchSize && partition.InRange(cs.pending[pendingSampleIndex].t) {
+			sampleTime := cs.pending[pendingSampleIndex].t
+
+			if sampleTime <= cs.initMaxTime && !mc.cfg.OverrideOld {
+				mc.logger.WarnWith("Omitting the sample - time is earlier than the last sample time for this metric", "metric", metric.Lset, "T", sampleTime, "InitMaxTime", cs.initMaxTime)
 				pendingSampleIndex++
-				mc.logger.DebugWith("nil active chunk", "T", sampleTime)
 				continue
 			}
-		}
 
-		// advance maximum time processed in metric
-		if sampleTime > cs.maxTime {
-			cs.maxTime = sampleTime
-		}
+			// Init activeChunk if nil (when samples are too old); if still too
+			// old, skip to next sample
+			if activeChunk == nil {
+				activeChunk = cs.chunkByTime(sampleTime)
+				if activeChunk == nil {
+					pendingSampleIndex++
+					mc.logger.DebugWith("nil active chunk", "T", sampleTime)
+					continue
+				}
+			}
 
-		// add value to aggregators
-		cs.aggrList.Aggregate(sampleTime, cs.pending[pendingSampleIndex].v)
+			// Advance maximum time processed in metric
+			if sampleTime > cs.maxTime {
+				cs.maxTime = sampleTime
+			}
 
-		// add value to compressed raw value chunk
-		activeChunk.appendAttr(sampleTime, cs.pending[pendingSampleIndex].v.(float64))
+			// Add a value to the aggregates list
+			cs.aggrList.Aggregate(sampleTime, cs.pending[pendingSampleIndex].v)
 
-		// if the last item or last item in the same partition add expressions and break
-		if (pendingSampleIndex == len(cs.pending)-1) || pendingSamplesCount == mc.cfg.BatchSize-1 || !partition.InRange(cs.pending[pendingSampleIndex+1].t) {
-			expr = expr + cs.aggrList.SetOrUpdateExpr("v", bucket, isNewBucket)
-			expr = expr + cs.appendExpression(activeChunk)
+			// Add a value to the compressed raw-values chunk
+			activeChunk.appendAttr(sampleTime, cs.pending[pendingSampleIndex].v.(float64))
+
+			// If this is the last item or last item in the same partition, add
+			// expressions and break
+			if (pendingSampleIndex == len(cs.pending)-1) || pendingSamplesCount == mc.cfg.BatchSize-1 || !partition.InRange(cs.pending[pendingSampleIndex+1].t) {
+				expr = expr + cs.aggrList.SetOrUpdateExpr("v", bucket, isNewBucket)
+				expr = expr + cs.appendExpression(activeChunk)
+				pendingSampleIndex++
+				pendingSamplesCount++
+				break
+			}
+
+			// If the next item is in new Aggregate bucket, generate an
+			// expression and initialize the new bucket
+			nextT := cs.pending[pendingSampleIndex+1].t
+			nextBucket := partition.Time2Bucket(nextT)
+			if nextBucket != bucket {
+				expr = expr + cs.aggrList.SetOrUpdateExpr("v", bucket, isNewBucket)
+				cs.aggrList.Clear()
+				bucket = nextBucket
+				isNewBucket = true
+			}
+
+			// If the next item is in a new chunk, generate an expression and
+			// initialize the new chunk
+			if !activeChunk.inRange(nextT) {
+				expr = expr + cs.appendExpression(activeChunk)
+				activeChunk = cs.chunkByTime(nextT)
+			}
+
 			pendingSampleIndex++
 			pendingSamplesCount++
-			break
 		}
 
-		// if the next item is in new Aggregate bucket, gen expression and init new bucket
-		nextT := cs.pending[pendingSampleIndex+1].t
-		nextBucket := partition.Time2Bucket(nextT)
-		if nextBucket != bucket {
-			expr = expr + cs.aggrList.SetOrUpdateExpr("v", bucket, isNewBucket)
-			cs.aggrList.Clear()
-			bucket = nextBucket
-			isNewBucket = true
+		cs.aggrList.Clear()
+		if pendingSampleIndex == len(cs.pending) {
+			cs.pending = cs.pending[:0]
+		} else {
+			// Leave pending unprocessed or from newer partitions
+			cs.pending = cs.pending[pendingSampleIndex:]
 		}
 
-		// if the next item is in a new chunk, gen expression and init new chunk
-		if !activeChunk.inRange(nextT) {
-			expr = expr + cs.appendExpression(activeChunk)
-			activeChunk = cs.chunkByTime(nextT)
+		if pendingSamplesCount == 0 || expr == "" {
+			if len(cs.pending) > 0 {
+				mc.metricQueue.Push(metric)
+			}
+			hasPendingUpdates, err = false, nil
+			return
 		}
 
-		pendingSampleIndex++
-		pendingSamplesCount++
-	}
+		// If the table object wasn't initialized, insert an init expression
+		if notInitialized {
+			// Initialize label (dimension) attributes
+			lblexpr := metric.Lset.GetExpr()
 
-	cs.aggrList.Clear()
-	if pendingSampleIndex == len(cs.pending) {
-		cs.pending = cs.pending[:0]
-	} else {
-		// leave pending not processed or from newer partitions
-		cs.pending = cs.pending[pendingSampleIndex:]
-	}
+			// Initialize aggregate arrays
+			lblexpr = lblexpr + cs.aggrList.InitExpr("v", numBuckets)
 
-	if pendingSamplesCount == 0 || expr == "" {
-		if len(cs.pending) > 0 {
-			mc.metricQueue.Push(metric)
+			expr = lblexpr + fmt.Sprintf("_lset='%s'; ", metric.key) + expr
 		}
-		return false, nil
-	}
 
-	// if the table object wasnt initialized, insert init expression
-	if notInitialized {
-		// init labels (dimension) attributes
-		lblexpr := metric.Lset.GetExpr()
+		// Call the V3IO async UpdateItem method
+		expr += fmt.Sprintf("_maxtime=%d;", cs.maxTime) // TODO: use max() expr
+		path := partition.GetMetricPath(metric.name, metric.hash)
+		request, err := mc.container.UpdateItem(
+			&v3io.UpdateItemInput{Path: path, Expression: &expr}, metric, mc.responseChan)
+		if err != nil {
+			mc.logger.ErrorWith("UpdateItem failed", "err", err)
+			hasPendingUpdates = false
+		}
 
-		// init aggregate arrays
-		lblexpr = lblexpr + cs.aggrList.InitExpr("v", numBuckets)
+		// Add the async request ID to the requests map (can be avoided if V3IO
+		// will add user data in request)
+		mc.logger.DebugWith("Update-metric expression", "name", metric.name, "key", metric.key, "expr", expr, "reqid", request.ID)
 
-		expr = lblexpr + fmt.Sprintf("_lset='%s'; ", metric.key) + expr
-	}
+		hasPendingUpdates, err = true, nil
+		cs.performanceReporter.UpdateHistogram("WriteChunksSizeHistogram", int64(pendingSamplesCount))
+		return
+	})
 
-	// Call V3IO async Update Item method
-	expr += fmt.Sprintf("_maxtime=%d;", cs.maxTime) // TODO: use max() expr
-	path := partition.GetMetricPath(metric.name, metric.hash)
-	request, err := mc.container.UpdateItem(
-		&v3io.UpdateItemInput{Path: path, Expression: &expr}, metric, mc.responseChan)
-	if err != nil {
-		mc.logger.ErrorWith("UpdateItem Failed", "err", err)
-		return false, err
-	}
-
-	// add async request ID to the requests map (can be avoided if V3IO will add user data in request)
-	mc.logger.DebugWith("updateMetric expression", "name", metric.name, "key", metric.key, "expr", expr, "reqid", request.ID)
-
-	return true, nil
+	return
 }
 
 // Process the (async) response for the chunk update request
 func (cs *chunkStore) ProcessWriteResp() {
 
 	for _, chunk := range cs.chunks {
-		// update chunk state (if it was written to)
+		// Update the chunk state (if it was written to)
 		if chunk.state&chunkStateWriting != 0 {
 			chunk.state |= chunkStateCommitted
 			chunk.state &^= chunkStateWriting
@@ -388,7 +421,7 @@ func (cs *chunkStore) ProcessWriteResp() {
 	}
 }
 
-// return the chunk update expression
+// Return the chunk's update expression
 func (cs *chunkStore) appendExpression(chunk *attrAppender) string {
 
 	if chunk != nil {
@@ -404,7 +437,7 @@ func (cs *chunkStore) appendExpression(chunk *attrAppender) string {
 
 		val := base64.StdEncoding.EncodeToString(bytes)
 
-		// overwrite, merge, or append based on the chunk state
+		// Overwrite, merge, or append based on the chunk state
 		if chunk.state&chunkStateCommitted != 0 || chunk.state&chunkStateMerge != 0 {
 			expr = fmt.Sprintf("%s=if_not_exists(%s,blob('')) + blob('%s'); ", attr, attr, val)
 		} else {
