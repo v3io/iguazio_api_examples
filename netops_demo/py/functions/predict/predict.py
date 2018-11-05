@@ -55,6 +55,11 @@ def _configure(context, configuration: dict):
     # Save configuration
     context.user_data.configuration = configuration
 
+    try:
+        context.user_data.state = configuration['state']
+    except KeyError:
+        pass
+
 
 def _start(context):
     context.logger.info_with('Starting to predict', prev_state=context.user_data.state)
