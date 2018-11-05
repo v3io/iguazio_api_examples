@@ -75,6 +75,15 @@ nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
 	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
   --platform-config '{"attributes": {"network":"netops"}}' \
 	netops-demo-generate
+	
+nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
+	--runtime python:3.6 \
+	--handler functions.predict.predict:predict \
+	--readiness-timeout 10 \
+	--platform local \
+	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1m"}}}' \
+  --platform-config '{"attributes": {"network":"netops"}}' \
+	netops-demo-predict
 ```
 
 You can choose to follow the logs by running `docker logs -f default-<function name>`, for example:
@@ -157,6 +166,21 @@ We can now start the generation:
 http localhost:<function port>/start
 ```
 
+By default, the predict function is idling - waiting for configuration. Let's configure it by POSTing the following configuration to `/configure`:
+```
+echo '
+{
+  'metrics': <metrics array>,
+  'tsdb': <tsdb server url:proemtheus port>,
+  'state': 'predicting'
+}
+' | http localhost:<function port>/configure
+```
+We can now start predicting:
+
+```sh
+http localhost:<function port>/start
+```
 ## Developing
 
 ### Python (Pycharm)
