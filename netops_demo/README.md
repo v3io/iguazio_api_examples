@@ -56,7 +56,7 @@ Deploy the functions, substituting the following:
 
 ```sh
 nuctl deploy \
-  --run-image netops-demo-golang:0.0.5 \
+  --run-image netops-demo-golang:latest \
   --runtime golang \
   --handler main:Ingest \
   --project-name netops \
@@ -67,7 +67,7 @@ nuctl deploy \
   --platform-config '{"attributes": {"network":"netops"}}' \
   netops-demo-ingest
 
-nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
+nuctl deploy --run-image iguaziodocker/netops-demo-py:latest \
 	--runtime python:3.6 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \

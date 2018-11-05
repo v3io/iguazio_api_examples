@@ -5,6 +5,7 @@ import math
 
 import libs.nuclio_sdk.test
 import functions.generate.generate
+import libs.utils.utils
 
 
 class TestCase(libs.nuclio_sdk.test.TestCase):
@@ -12,6 +13,7 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
     def setUp(self):
         super().setUp()
         self._module = functions.generate.generate
+        self._utils = libs.utils.utils
 
     def test_configure(self):
         configuration = {
@@ -104,12 +106,12 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
         metrics_batch = {'some': 'metrics'}
 
         with self.assertRaises(ValueError):
-            self._module._send_emitters_to_target(context, 'unknown', metrics_batch)
+            self._utils.send_emitters_to_target(context, 'unknown', metrics_batch)
 
-        response = self._module._send_emitters_to_target(context, 'response', metrics_batch)
+        response = self._utils.send_emitters_to_target(context, 'response', metrics_batch)
         self.assertEqual(response, metrics_batch)
 
-        self._module._send_emitters_to_target(context, 'function:some-function', metrics_batch)
+        self._utils.send_emitters_to_target(context, 'function:some-function', metrics_batch)
 
         # verify some-function was called
         name, sent_event = self._platform.get_call_function_call_args(0)
@@ -165,18 +167,6 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
                 # verify correct timestamps
                 self.assertEqual(metric['timestamps'][0], request_body['start_timestamp'])
                 self.assertEqual(metric['timestamps'][-1], request_body['end_timestamp'] - request_body['interval'])
-
-    def test_predict(self):
-        configuration = self._get_sample_configuration()
-
-        # encode configuration into environment variable
-        os.environ['GENERATOR_CONFIGURATION'] = json.dumps(configuration)
-
-        # call start
-        response = self._platform.call_handler(self._module.generate, event=libs.nuclio_sdk.Event(path='/predict'))
-        self.assertIsNotNone(response, 'Prediction is empty')
-
-
 
     def test_generate_multi_batch(self):
         configuration = self._get_sample_configuration()
