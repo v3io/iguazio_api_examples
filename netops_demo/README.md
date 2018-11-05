@@ -72,6 +72,7 @@ nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
 	--handler functions.generate.generate:generate \
 	--readiness-timeout 10 \
 	--platform local \
+	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
   --platform-config '{"attributes": {"network":"netops"}}' \
 	netops-demo-generate
 ```
