@@ -79,5 +79,6 @@ class TestCase(libs.nuclio_sdk.test.TestCase):
         return {
             'metrics': ['cpu_utilization', 'throughput'],
             'tsdb': 'http://192.168.224.49:9090',
-            'state': 'predicting'
+            'state': 'predicting',
+            'target': 'function:netops-demo-ingest'
         }
