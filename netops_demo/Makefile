@@ -1,7 +1,7 @@
 NETOPS_TAG := $(if $(NETOPS_TAG),$(NETOPS_TAG),latest)
 NETOPS_REGISTRY_URL := $(if $(NETOPS_REGISTRY_URL),$(NETOPS_REGISTRY_URL),iguaziodocker)
-MODEL_FILE_V := $(if $(MODEL_FILE), $(MODEL_FILE),/tmp/model/netops.model)
-MODEL_LOCATION_URL_V := $(if $(MODEL_LOCATION_URL), $(MODEL_LOCATION_URL),http://192.168.224.49:8081/1/netops.model)
+MODEL_FILE := $(if $(MODEL_FILE), $(MODEL_FILE),/tmp/model/netops.model)
+MODEL_LOCATION_URL := $(if $(MODEL_LOCATION_URL), $(MODEL_LOCATION_URL),http://192.168.224.49:8081/1/netops.model)
 
 .PHONY: default
 default: golang py
@@ -10,8 +10,8 @@ default: golang py
 py:
 	cd py && docker build \
 	    --tag netops-demo-py:$(NETOPS_TAG) \
-		--build-arg MODEL_FILE=$(MODEL_FILE_V) \
-		--build-arg MODEL_LOCATION_URL=$(MODEL_LOCATION_URL_V) \
+		--build-arg MODEL_FILE=$(MODEL_FILE) \
+		--build-arg MODEL_LOCATION_URL=$(MODEL_LOCATION_URL) \
 		.
 
 .PHONY: golang
