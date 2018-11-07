@@ -172,7 +172,8 @@ echo '
 {
   'metrics': <metrics array>,
   'tsdb': <tsdb server url:proemtheus port>,
-  'state': 'predicting'
+  'state': 'predicting',
+  'target': "function:netops-demo-ingest"
 }
 ' | http localhost:<function port>/configure
 ```
