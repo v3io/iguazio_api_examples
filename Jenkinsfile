@@ -88,13 +88,7 @@ spec:
                         sh """
                             cd ${BUILD_FOLDER}
                             git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${git_project_user}/${git_project}.git src/github.com/v3io/${git_project}
-                            cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops_demo/golang/src/github.com/v3io/demos
-                            rm -rf vendor/github.com/v3io/v3io-tsdb/
-                            git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${git_project_user}/v3io-tsdb.git vendor/github.com/v3io/v3io-tsdb
-                            cd vendor/github.com/v3io/v3io-tsdb
-                            rm -rf .git vendor/github.com/v3io vendor/github.com/nuclio
                         """
-//                            git checkout ${V3IO_TSDB_VERSION}
                     }
                 }
 
@@ -110,23 +104,6 @@ spec:
                         withDockerRegistry([credentialsId: docker_credentials, url: ""]) {
                             sh "docker push ${docker_user}/netops-demo-golang:${TAG_VERSION}"
                             sh "docker push ${docker_user}/netops-demo-py:${TAG_VERSION}"
-                        }
-                    }
-                }
-
-                stage('git push') {
-                    container('jnlp') {
-                        try {
-                            sh """
-                                git config --global user.email '${GIT_USERNAME}@iguazio.com'
-                                git config --global user.name '${GIT_USERNAME}'
-                                cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops_demo
-                                git add *
-                                git commit -am 'Updated TSDB to latest';
-                                git push origin master
-                            """
-                        } catch (err) {
-                            echo "Can not push code to git"
                         }
                     }
                 }
