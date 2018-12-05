@@ -101,6 +101,11 @@ spec:
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops_demo/py
                             docker build . --tag netops-demo-py:latest --tag ${docker_user}/netops-demo-py:${TAG_VERSION}
                         """
+                    }
+                }
+
+                stage('push to hub') {
+                    container('docker-cmd') {
                         withDockerRegistry([credentialsId: docker_credentials, url: ""]) {
                             sh "docker push ${docker_user}/netops-demo-golang:${TAG_VERSION}"
                             sh "docker push ${docker_user}/netops-demo-py:${TAG_VERSION}"
