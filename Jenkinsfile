@@ -1,8 +1,11 @@
-def label = "${UUID.randomUUID().toString()}"
-def BUILD_FOLDER = "/go"
-def github_user = "gkirok"
-def docker_user = "gallziguazio"
-def git_project = "iguazio_api_examples"
+label = "${UUID.randomUUID().toString()}"
+BUILD_FOLDER = "/go"
+docker_user = "iguaziodocker"
+docker_credentials = "iguazio-prod-docker-credentials"
+git_project = "iguazio_api_examples"
+git_project_user = "v3io"
+git_deploy_user = "iguazio-prod-git-user"
+git_deploy_user_token = "iguazio-prod-git-user-token"
 
 properties([pipelineTriggers([[$class: 'PeriodicFolderTrigger', interval: '2m']])])
 podTemplate(label: "${git_project}-${label}", yaml: """
@@ -47,12 +50,9 @@ spec:
 """
     ) {
     node("${git_project}-${label}") {
-//        currentBuild.displayName = "${git_project}"
-//        currentBuild.description = "Will not run with tags created before 4 hours and more."
-
         withCredentials([
-                usernamePassword(credentialsId: '4318b7db-a1af-4775-b871-5a35d3e75c21', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME'),
-                string(credentialsId: 'dd7f75c5-f055-4eb3-9365-e7d04e644211', variable: 'GIT_TOKEN')
+                usernamePassword(credentialsId: git_deploy_user, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME'),
+                string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN')
         ]) {
             def AUTO_TAG
             def TAG_VERSION
@@ -83,23 +83,17 @@ spec:
             }
 
             if ( TAG_VERSION && PUBLISHED_BEFORE < 240 ) {
-//                    def V3IO_TSDB_VERSION = sh(
-//                            script: "echo ${TAG_VERSION} | awk -F '-v' '{print \"v\"\$2}'",
-//                            returnStdout: true
-//                    ).trim()
-
                 stage('prepare sources') {
                     container('jnlp') {
                         sh """
                             cd ${BUILD_FOLDER}
-                            git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${github_user}/${git_project}.git src/github.com/v3io/${git_project}
+                            git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${git_project_user}/${git_project}.git src/github.com/v3io/${git_project}
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops_demo/golang/src/github.com/v3io/demos
                             rm -rf vendor/github.com/v3io/v3io-tsdb/
-                            git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${github_user}/v3io-tsdb.git vendor/github.com/v3io/v3io-tsdb
+                            git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${git_project_user}/v3io-tsdb.git vendor/github.com/v3io/v3io-tsdb
                             cd vendor/github.com/v3io/v3io-tsdb
                             rm -rf .git vendor/github.com/v3io vendor/github.com/nuclio
                         """
-
 //                            git checkout ${V3IO_TSDB_VERSION}
                     }
                 }
@@ -113,7 +107,7 @@ spec:
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops_demo/py
                             docker build . --tag netops-demo-py:latest --tag ${docker_user}/netops-demo-py:${TAG_VERSION}
                         """
-                        withDockerRegistry([credentialsId: "472293cc-61bc-4e9f-aecb-1d8a73827fae", url: ""]) {
+                        withDockerRegistry([credentialsId: docker_credentials, url: ""]) {
                             sh "docker push ${docker_user}/netops-demo-golang:${TAG_VERSION}"
                             sh "docker push ${docker_user}/netops-demo-py:${TAG_VERSION}"
                         }
