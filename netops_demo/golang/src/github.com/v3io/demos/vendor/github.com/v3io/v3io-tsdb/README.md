@@ -1,13 +1,14 @@
 [![Build Status](https://travis-ci.org/v3io/v3io-tsdb.svg?branch=master)](https://travis-ci.org/v3io/v3io-tsdb)
 
 # V3IO-TSDB
-Iguazio API lib for time-series DB access and Prometheus TSDB storage driver. 
+Iguazio's V3IO TSDB API library for time-series database access, including a Prometheus TSDB storage driver. 
 
-> Note: This project is still under development, it requires the latest 1.7 release of iguazio DB (with Blob functions)
+> **Note:** The V3IO TSDB library is supported as Tech Preview in v1.9 of the Iguazio Data Science Platform ("the platform"), and officially supported beginning with v2.0.0 of the platform.
+> Check the [platform support matrix](https://www.iguazio.com/docs/specs/latest-release/support-matrix/) for the TSDB version supported for your version of the platform.
 
 ## Overview
-Iguazio provides a real-time flexible document database engine which accelerates popular BigData and open-source 
-frameworks such as Spark and Presto, as well as provide AWS compatible data APIs (DynamoDB, Kinesis, S3). 
+
+Iguazio provides a real-time flexible database engine that accelerates popular big-data and open-source frameworks such as Spark and Presto, as well as provides AWS compatible data APIs (DynamoDB, Kinesis, S3). 
 
 Iguazio DB engine runs at the speed of in-memory databases, but uses lower cost and higher density (NVMe) Flash, it has 
 a unique low-level design with highly parallel processing and OS bypass which treats Flash as async memory pages. 
@@ -34,6 +35,7 @@ incoming data e.g. examine metric data, alert, convert formats, etc.
 <br>
 
 ## Architecture
+
 The solution stores the raw data in highly compressed column chunks (using Gorilla/XOR compression variation), with one 
 chunk for every n hours (1hr default), queries will only retrieve and decompress the specific columns based on the 
 requested time range. 
@@ -266,3 +268,4 @@ Once we obtain a set using one of the methods above we can iterate over the set 
 		fmt.Println()
 	}
 ```
+
