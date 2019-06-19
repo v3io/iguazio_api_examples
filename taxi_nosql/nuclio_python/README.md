@@ -10,7 +10,7 @@ For local installs, add `--platform local` to all of the following commands.
 
 2.  Update **/xxx/nuclio_python/generate_data.yaml** `INGEST_URL` to point to the ingestion-function URL
 
-3.  Update **/xxx/nuclio_python/ingest.yaml** `WEBAPI_URL`,`WEBAPI_USER` and `WEBAPI_PASSWORD` to point to the Iguazio Continuous Data Platform web-gateway service URL
+3.  Update **/xxx/nuclio_python/ingest.yaml** `WEBAPI_URL`,`WEBAPI_USER` and `WEBAPI_PASSWORD` to point to the Iguazio Data Science Platform web-gateway service URL
 
 4.  Update **/xxx/nuclio_python/ingest.yaml** `DRIVERS_TABLE`, `PASSENGERS_TABLE` and `CELLS_TABLE` to point to the desired location of the tables
 
