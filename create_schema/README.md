@@ -16,7 +16,7 @@ Run `./create_schema --help` for full usage instructions.
 ## Notes
 
 * The utility creates a **.#schema** JSON file in the root directory of the scanned table.
-  This file is used by the [iguazio Continuous Data Platform](https://www.iguazio.com) to support table reads using Spark DataFrames and Presto.
+  This file is used by the [Iguazio Data Science Platform](https://www.iguazio.com) to support table reads using Spark DataFrames and Presto.
 
   > **Note:** Do not rename the generated **.#schema** file.
 * The utility scans the configured amount of items (see the `-l | --limit` option) and checks for consistency in the item attributes.

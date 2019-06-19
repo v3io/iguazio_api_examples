@@ -1,6 +1,6 @@
 # 1. Generate Data
 
-To generate the data in CSV format, run the following scripts on the server on which the Iguazio Continuous Data Platform web-gateway service is hosted:
+To generate the data in CSV format, run the following scripts on the server on which the Iguazio Data Science Platform web-gateway service is hosted:
 
 ```sh
 ./create_random_passenger_data.sh 
