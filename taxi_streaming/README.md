@@ -64,7 +64,7 @@ The sample's root directory contains bash shell scripts that simplify the code e
 Follow these steps to run the scripts and test the sample in less than two minutes; (the most time-consuming task is the generation of the random test data):
 
 > **Note:** By default, the sample creates the stream and tables in a **taxi_streaming_example** directory in the default "bigdata" container.
-> You can view the directory's contents in the platform dashboard (from the cont**Data > &lt;container&gt; > Browse** tab) or from the command line via your platform's data-node DFS mount (`v3io` &mdash; for example, <nobr>`ls /v3io/bigadata/taxi_streaming_example/`</nobr>).
+> You can view the directory's contents in the platform dashboard (from the **Data > &lt;container&gt; > Browse** tab) or from the command line via your platform's data-node DFS mount (`v3io` &mdash; for example, <nobr>`ls /v3io/bigadata/taxi_streaming_example/`</nobr>).
 
 1.  <a id="sample_run_create_random_drivers_data_sh"></a>
     Generate data &mdash; use the [**create_random_drivers_data.sh**](../taxi_streaming/create_random_drivers_data.sh) script to run the **create_random_drivers_data.py** application, which generates a **drivers_data.csv** file that contains the input data for the stream:
