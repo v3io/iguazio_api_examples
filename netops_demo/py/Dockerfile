@@ -2,6 +2,7 @@ ARG NUCLIO_TAG=0.5.15
 ARG NUCLIO_ARCH=amd64
 ARG NUCLIO_BASE_IMAGE=python:3.7
 
+
 # Supplies processor uhttpc, used for healthcheck
 FROM nuclio/uhttpc:0.0.1-amd64 as uhttpc
 
@@ -18,6 +19,9 @@ COPY --from=uhttpc /home/nuclio/bin/uhttpc /usr/local/bin/uhttpc
 
 # Copy the appropriate functions
 COPY functions/generate /opt/nuclio/functions/generate
+COPY functions/predict /opt/nuclio/functions/predict
+
+
 
 # Copy all of the shared code
 COPY libs /opt/nuclio/libs
@@ -32,4 +36,19 @@ HEALTHCHECK --interval=1s --timeout=3s CMD /usr/local/bin/uhttpc --url http://lo
 CMD [ "processor", "--config", "/etc/nuclio/config/processor/processor.yaml", "--platform-config", "/etc/nuclio/config/platform/platform.yaml" ]
 
 # Install packages
+
+## Download the model file and make it available locally
+ARG MODEL_LOCATION_URL=http://192.168.224.49:8081/1/netops.model
+ARG MODEL_FILE=/tmp/model/netops.model
+
+ENV MODEL_FILE $MODEL_FILE
+
+RUN mkdir -p /tmp/model &&  cd /tmp/model && \
+curl -X GET \
+    ${MODEL_LOCATION_URL} \
+    -o ${MODEL_FILE} \
+    -H 'authorization: Basic aWd1YXppbzpkYXRhbEBrZSE=' \
+    -H 'cache-control: no-cache' \
+    -H 'content-type: application/json'
+
 RUN cd /opt/nuclio && pip install -r requirements.txt

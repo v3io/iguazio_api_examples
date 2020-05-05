@@ -3,9 +3,11 @@ import time
 import json
 import re
 
+import libs.utils.utils
 import libs.generator.deployment
 import libs.nuclio_sdk
 
+#TODO: Seperate predict and generate functions to utils
 
 def generate(context, event):
     if event.path == '/configure':
@@ -19,6 +21,8 @@ def generate(context, event):
         _stop(context)
     elif event.path == '/sites':
         return _sites(context)
+    elif event.path == '/devices':
+        return _devices(context)
     elif event.path in ['/generate', '/', '']:
         if context.user_data.state == 'generating':
             return _generate(context, **(event.body or {}))
@@ -29,12 +33,8 @@ def generate(context, event):
 
 def init_context(context):
 
-    # initialize context structure
-    for context_attr in ['state', 'configuration', 'manager']:
-        setattr(context.user_data, context_attr, None)
-
-    # start in idle state
-    context.user_data.state = 'idle'
+    # Init states
+    libs.utils.utils.init_context(context)
 
     # check to see if there's an environment variable with our initial configuration
     if 'GENERATOR_CONFIGURATION' in os.environ:
@@ -94,7 +94,7 @@ def _sites(context):
     for company in deployment.companies:
         company_name_label = _company_name_to_label(company.name)
 
-        for i, site_locations in enumerate(company.locations):
+        for i, site_locations in enumerate(company.locations.values()):
             sites.append({
                 'key': f'{company_name_label}/{i}',
                 'latitude': site_locations[0],
@@ -104,6 +104,18 @@ def _sites(context):
 
     return sites
 
+
+def _devices(context):
+    deployment = context.user_data.deployment
+    context.logger.info_with('Sending list of devices', deployment=deployment)
+
+    devices = []
+    for company in deployment.companies:
+        for i, site_locations in company.components.items():
+            for j, x in enumerate(site_locations['devices']):
+                devices.append(f'{company.name}/{i}/{j}')
+
+    return devices
 
 def _generate(context,
               start_timestamp=None,
@@ -136,7 +148,7 @@ def _generate(context,
         emitters = _generate_emitters(context, start_timestamp, num_samples, interval)
 
         # send the metrics towards the target
-        response = _send_emitters_to_target(context, target, emitters)
+        response = libs.utils.utils.send_emitters_to_target(context, target, emitters)
 
         # if this is an event response, make sure it's OK
         if type(response) is context.Response and response.status_code != 200:
@@ -251,24 +263,6 @@ def _create_emitter(context, company_name, site_name, site_info, emitter_id):
         }
 
     return emitter
-
-
-def _send_emitters_to_target(context, target, metrics_batch):
-    context.logger.debug_with('Sending metrics to target', target=target)
-
-    if target.startswith('function'):
-
-        # function:netops-ingest -> netops-ingest
-        target_function = target.split(':')[1]
-
-        context.platform.call_function(target_function, libs.nuclio_sdk.Event(body=metrics_batch))
-    elif target == 'response':
-        return metrics_batch
-    elif target == 'log':
-        context.logger.info_with('Sending metrics batch', metrics_batch=metrics_batch)
-    else:
-        raise ValueError(f'Unknown target type {target}')
-
 
 def _company_name_to_label(company_name):
     return re.sub(r'[^a-zA-Z -]', '', company_name).lower().replace(' ', '_').replace('-', '_')

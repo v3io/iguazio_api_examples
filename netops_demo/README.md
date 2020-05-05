@@ -6,7 +6,7 @@ This demo generates network data and detects, predicts and visualizes anomalies.
 3. Nuclio functions that generate and ingest historical and real-time metric samples into the Iguazio TSDB and Anodot
 4. Grafana for visualization of metrics
 
-Setting up an Iguazio system including Grafana and Nuclio is out of the scope of this document. 
+Setting up an Iguazio system including Grafana and Nuclio is out of the scope of this document.
 
 ## Deploying and running the demo
 
@@ -20,7 +20,7 @@ helm install v3io-demo/netops \
   --set ingest.tsdb.path <tsdb path>
 ```
 
-> Note: To ingest into Anodot, add `--set ingest.anodot.token <anodot token>` to the above. 
+> Note: To ingest into Anodot, add `--set ingest.anodot.token <anodot token>` to the above.
 
 The demo is configured with defaults, as can be found in the values.yaml (#REF). You can download and modify these settings and pass `--values <values-file-path>` rather than the `--set` arguments above. The generator is configured through a Kubernetes configmap, so it comes up configured. All we need to do is start the generation, including a day of historical data:
 
@@ -75,6 +75,15 @@ nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
 	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1s"}}}' \
   --platform-config '{"attributes": {"network":"netops"}}' \
 	netops-demo-generate
+	
+nuctl deploy --run-image iguaziodocker/netops-demo-py:0.0.5 \
+	--runtime python:3.6 \
+	--handler functions.predict.predict:predict \
+	--readiness-timeout 10 \
+	--platform local \
+	--triggers '{"periodic": {"kind": "cron", "workerAllocatorName": "defaultHTTPWorkerAllocator", "attributes": {"interval": "1m"}}}' \
+  --platform-config '{"attributes": {"network":"netops"}}' \
+	netops-demo-predict
 ```
 
 You can choose to follow the logs by running `docker logs -f default-<function name>`, for example:
@@ -157,6 +166,22 @@ We can now start the generation:
 http localhost:<function port>/start
 ```
 
+By default, the predict function is idling - waiting for configuration. Let's configure it by POSTing the following configuration to `/configure`:
+```
+echo '
+{
+  'metrics': <metrics array>,
+  'tsdb': <tsdb server url:proemtheus port>,
+  'state': 'predicting',
+  'target': "function:netops-demo-ingest"
+}
+' | http localhost:<function port>/configure
+```
+We can now start predicting:
+
+```sh
+http localhost:<function port>/start
+```
 ## Developing
 
 ### Python (Pycharm)
@@ -184,11 +209,10 @@ Modify the source code and build the images:
 NETOPS_TAG=latest make
 ```
 
-This will output `netops-demo-golang:latest` and `netops-demo-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md). 
-> The `golang` image contains the `ingest` and `query` functions. The `py` image contains the `generate` and `train` functions. By bunching together a few functions inside a single image we allow for easily sharing code without worrying about versioning, reducing the number of moving parts, etc. 
+This will output `netops-demo-golang:latest` and `netops-demo-py:latest` using Nuclio's ability to [build function images from Dockerfiles](https://github.com/nuclio/nuclio/blob/master/docs/tasks/deploy-functions-from-dockerfile.md).
+> The `golang` image contains the `ingest` and `query` functions. The `py` image contains the `generate` and `train` functions. By bunching together a few functions inside a single image we allow for easily sharing code without worrying about versioning, reducing the number of moving parts, etc.
 
 Push the images to your favorite Docker registry:
 ```
 NETOPS_TAG=latest NETOPS_REGISTRY_URL=mydockerhubaccount make push
 ```
-
