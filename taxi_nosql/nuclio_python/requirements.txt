@@ -1,2 +1,2 @@
-requests==2.19.1
+requests==2.31.0
 s2sphere==0.2.5
