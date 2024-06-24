@@ -39,7 +39,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.4990232516124,
             "latitute": -0.16853921733979035,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/0"
+            "site_name": "Wong Ltd/0",
+			"device": "Wong Ltd/0/0"
         },
         "metrics": {
             "cpu_utilization": {
@@ -87,7 +88,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.4990232516124,
             "latitute": -0.16853921733979035,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/0"
+            "site_name": "Wong Ltd/0",
+			"device": "Wong Ltd/0/1"
         },
         "metrics": {
             "cpu_utilization": {
@@ -135,7 +137,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.4990232516124,
             "latitute": -0.16853921733979035,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/0"
+            "site_name": "Wong Ltd/0",
+			"device": "Wong Ltd/0/2"
         },
         "metrics": {
             "cpu_utilization": {
@@ -183,7 +186,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.4990232516124,
             "latitute": -0.16853921733979035,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/0"
+            "site_name": "Wong Ltd/0",
+			"device": "Wong Ltd/0/3"
         },
         "metrics": {
             "cpu_utilization": {
@@ -231,7 +235,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.4990232516124,
             "latitute": -0.16853921733979035,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/0"
+            "site_name": "Wong Ltd/0",
+			"device": "Wong Ltd/0/4"
         },
         "metrics": {
             "cpu_utilization": {
@@ -279,7 +284,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.518019501496426,
             "latitute": -0.09269391832986805,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/1"
+            "site_name": "Wong Ltd/1",
+			"device": "Wong Ltd/1/0"
         },
         "metrics": {
             "cpu_utilization": {
@@ -327,7 +333,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.518019501496426,
             "latitute": -0.09269391832986805,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/1"
+            "site_name": "Wong Ltd/1",
+			"device": "Wong Ltd/1/1"
         },
         "metrics": {
             "cpu_utilization": {
@@ -375,7 +382,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.518019501496426,
             "latitute": -0.09269391832986805,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/1"
+            "site_name": "Wong Ltd/1",
+			"device": "Wong Ltd/1/2"
         },
         "metrics": {
             "cpu_utilization": {
@@ -423,7 +431,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.518019501496426,
             "latitute": -0.09269391832986805,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/1"
+            "site_name": "Wong Ltd/1",
+			"device": "Wong Ltd/1/3"
         },
         "metrics": {
             "cpu_utilization": {
@@ -471,7 +480,8 @@ func (suite *ingestSuite) TestIngestValid() {
             "longitude": 51.518019501496426,
             "latitute": -0.09269391832986805,
             "company_name": "Wong Ltd",
-            "site_name": "Wong Ltd/1"
+            "site_name": "Wong Ltd/1",
+			"device": "Wong Ltd/1/4"
         },
         "metrics": {
             "cpu_utilization": {

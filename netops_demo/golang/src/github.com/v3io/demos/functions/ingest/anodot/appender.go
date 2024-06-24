@@ -1,26 +1,26 @@
 package anodot
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
-	"fmt"
-	"encoding/json"
-	"bytes"
-	"io/ioutil"
 
 	"github.com/nuclio/logger"
 )
 
 type Metric struct {
 	Properties map[string]interface{} `json:"properties,omitempty"`
-	Tags map[string]interface{} `json:"tags,omitempty"`
-	Timestamp uint64 `json:"timestamp,omitempty"`
-	Value float64 `json:"value,omitempty"`
+	Tags       map[string]interface{} `json:"tags,omitempty"`
+	Timestamp  uint64                 `json:"timestamp,omitempty"`
+	Value      float64                `json:"value,omitempty"`
 }
 
 type Appender struct {
-	logger logger.Logger
-	httpClient *http.Client
+	logger         logger.Logger
+	httpClient     *http.Client
 	appendEndpoint string
 }
 
